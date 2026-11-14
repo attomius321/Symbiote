@@ -1,0 +1,11 @@
+{
+  "merge": {
+    "checks": ["npm test"]
+  },
+  "hive": {
+    "budget": 20,
+    "issues": {
+      "about": "durations is a small JavaScript library and CLI (`dur`) with no dependencies. It parses and formats time spans such as \"1h 30m\". Hive may take bug fixes and small features in `src/` and `bin/`, each with tests in `test/` that `npm test` runs. Hive does not take: CI or GitHub workflows, releases or publishing, new dependencies, documentation sites, or anything outside this repository."
+    }
+  }
+}
