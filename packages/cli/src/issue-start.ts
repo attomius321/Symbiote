@@ -16,6 +16,7 @@ import type { AnswerStep } from './issue-answer.js';
 import { IssueRefused, type IssueClassifier } from './issue-classifier.js';
 import { appendIssueEvent } from './issue-record.js';
 import type { IssuesService } from './issues.js';
+import { briefOf, MAX_BRIEF, partsFor } from './workspace-brief.js';
 import type { Workspaces } from './workspace-context.js';
 
 /** Who asks for the start: the page's click is the person's; Nucleus and `symbiote mcp` are not. */
@@ -169,14 +170,20 @@ export function issueStarter(ctx: IssueStartContext) {
       title: record.title,
       hash: record.snapshot.hash,
     };
+    // A part its kind has no place for goes to Notes, under its heading (fix HV12, decision 1080).
+    const parts = partsFor(answer.kind, answer.parts);
+    const length = briefOf(answer.kind, answer.title, parts).length;
+    if (length > MAX_BRIEF) {
+      throw new IssueRefused(
+        `Issue #${number}'s brief is ${length.toLocaleString('en-US')} characters with the parts a ${answer.kind} has no place for kept in its Notes: a brief is at most ${MAX_BRIEF.toLocaleString('en-US')}. Classify it again`,
+        409,
+      );
+    }
     const branch = await issueBranch(answer.kind, number, record.title, (b) => ctx.taken(b));
     const started = await ctx.start({
       kind: answer.kind,
       title: answer.title,
-      // The schema has every kind's part: the other kinds' come empty, and a start refuses them.
-      parts: Object.fromEntries(
-        Object.entries(answer.parts).filter(([, text]) => text.trim() !== ''),
-      ),
+      parts,
       branch,
       planFirst: false,
       agent: 'claude',

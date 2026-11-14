@@ -536,8 +536,11 @@ since its snapshot, it is classified again first, and the new decision holds. It
 - a held take, from Nucleus or `symbiote mcp`: only your click on the page starts one;
 - an issue whose workspace is not yet landed, merged or cleaned up: one workspace an issue.
 
-The workspace takes the classifier's kind, title, parts, model and effort. Its brief starts with
-`From issue #n (<url>).`, then the classifier's brief; never the issue's own text. Its branch is
+The workspace takes the classifier's kind, title, parts, model and effort. A part its kind has no
+place for (a fix's "What is known", say) goes to Notes under its heading, as
+`What is known: <text>`, in the brief the card shows too. Its brief starts with
+`From issue #n (<url>).`, then the classifier's brief; never the issue's own text. A brief over
+20,000 characters with those parts in Notes is refused: classify the issue again. Its branch is
 `<kind>/<number>-<slug of the issue's title>`, as `fix/412-config-is-null`, and `-2`, `-3` after it
 when an earlier workspace of the issue left its branch. Its record and its summary hold `issue`:
 the forge, host, project, number, address, title and the snapshot's hash. The issue's events get

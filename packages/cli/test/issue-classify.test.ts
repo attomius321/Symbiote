@@ -222,6 +222,10 @@ describe('an answer that does not fit, checked in code', () => {
     expect(answerMisfit({ ...take, parts: { ...take.parts, notes: 'n'.repeat(MAX_BRIEF) } })).toBe(
       'brief',
     );
+    // A part the kind has no place for counts: it goes to Notes (decision 1080).
+    expect(answerMisfit({ ...take, parts: { ...take.parts, known: 'k'.repeat(MAX_BRIEF) } })).toBe(
+      'brief',
+    );
     // The refusal and its parts are not checked as a take's.
     expect(answerMisfit({ ...refuse, title: 't'.repeat(201) })).toBeNull();
   });
@@ -291,6 +295,12 @@ describe('the brief the writer gets (decision 1004)', () => {
     expect(brief).toContain('\n## How to reproduce\n1. Set GITHUB_TOKEN.');
     // The issue's own text is never in it.
     expect(brief).not.toContain(ISSUE.body);
+    // The parts a fix has no place for, kept in its Notes as the start gives them (decision 1080).
+    expect(brief).toContain(
+      '\n\nWhat is known: The token gets into the log through the request headers',
+    );
+    expect(brief).toContain('\n\nOut of scope: Changing the log format or location');
+    expect(brief).not.toContain('\n## What is known');
   });
 });
 

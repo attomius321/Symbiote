@@ -2,7 +2,7 @@
 
 [Index](../PLAN.md) · Found by [HV12's real run](../journal/hv12-issue-loop-real-run.md)
 
-**Status:** planned (2026-11-14) by the spike `spike/hv12-issue-loop-real-run`. Not started.
+**Status:** built, ready for review (2026-11-14). Planned by the spike `spike/hv12-issue-loop-real-run`.
 
 **Kind** fix · **Branch** `fix/issue-start-parts` · **Size** S · **Depends on** none
 
@@ -85,3 +85,36 @@ describe('startFromIssue: a take with parts of other kinds (HV12)', () => {
 The test above; HV10b's start tests unchanged; `pnpm check`, `pnpm build`; the e2e of Start in
 Hive (`issues-classify.spec.ts`, `issues-answered.spec.ts`). Then HV12's run starts its takes
 without the hand edit.
+
+## Decisions
+
+1080 was free on `main` and every branch on 2026-11-14 (the brief gives this fix 1080–1081).
+
+| # | Question | Decision | Why |
+|---|---|---|---|
+| 1080 | Where does a classifier's part go that its take's kind has no place for (a fix's "What is known")? | **To Notes, after the classifier's own notes, as `<heading>: <text>`, in the brief's order: one function (`partsFor`, `workspace-brief.ts`) for the start's request, the record's brief and the classifier's length check. A start whose brief then passes 20,000 characters is refused with words (409)** | Opus filled such parts in 6 of 6 real takes, and their text matters (issue 1's expected result). Dropping it loses the issue's facts; widening a kind's parts changes the start page. One function keeps the brief the card shows the brief the writer gets |
+
+## As built
+
+As planned, with four additions:
+
+- **The record's brief too.** `issueBrief` wrote the brief the card shows from the kind's parts
+  only, so issue 1's expected result was missing there as well. It now uses `partsFor`, so the
+  card's brief and the workspace's are the same text. The personal check reads that brief, so a
+  name in a part of another kind now holds the take, as it would in any other part.
+- **The classifier's length check** (`answerMisfit`'s `brief`) counts those parts in Notes. An
+  answer that fits the check starts.
+- **HV10b's request test changed one line.** Its fixture take (`a01`, Opus at high, HV9a) is
+  itself a fix with `known` and `outOfScope`, and the test expected them in the request: the
+  bug, against its own comment ("only the kind's own parts with text"). It now filters by
+  `partsOf('fix')`; nothing else in HV10b's tests changed.
+- **The e2e take is real-shaped.** `issues-start.spec.ts`'s fake take is a fix with `known` and
+  `outOfScope`, as Opus writes them; the e2e fakes had left every other part empty, which is why
+  no test met the bug. It checks the writer's prompt holds them in Notes.
+
+HV12's records cannot be replayed: the run edited the 6 takes by hand before starting them, so no
+record keeps an original answer. The plan's test holds issue 1's text instead.
+
+## Results
+
+See the [journal](../journal/fix-issue-start-parts.md).

@@ -33,7 +33,10 @@ test.afterEach(async () => {
 
 const ABOUT = 'A small web app. Hive may take bug fixes with a reproduction, and docs.';
 
-/** A take of the classifier, as HV9's schema holds it. */
+/**
+ * A take of the classifier, as HV9's schema holds it: a fix with parts a fix has no place for,
+ * as the real classifier wrote them (HV12).
+ */
 const TAKE = {
   decision: 'take',
   reasons: ['A clear bug with a reproduction.'],
@@ -48,9 +51,9 @@ const TAKE = {
     restructure: '',
     change: '',
     question: '',
-    known: '',
+    known: 'Expected result: the same matches for Foo and foo.',
     where: '',
-    outOfScope: '',
+    outOfScope: 'No new dependencies.',
     notes: '',
     doneWhen: '',
   },
@@ -163,6 +166,10 @@ test('Start in Hive: the workspace on the card, the row and the sidenav, its wri
   const prompt = args?.at(-1) ?? '';
   expect(prompt).toContain('From issue #1 (');
   expect(prompt).toContain('This brief came from issue #1');
+  // The parts a fix has no place for, in its Notes under their headings (fix HV12, decision 1080).
+  expect(prompt).toContain(
+    '## Notes\nWhat is known: Expected result: the same matches for Foo and foo.\n\nOut of scope: No new dependencies.',
+  );
 
   // Its page's head: #1, a link to the issue on the Issues page.
   await opened.getByRole('link', { name: branch }).click();

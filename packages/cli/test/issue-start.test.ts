@@ -20,6 +20,8 @@ import {
   type IssueStartContext,
 } from '../src/issue-start.js';
 import { parseWorkspaceRequest } from '../src/server-requests.js';
+import { MAX_BRIEF, partsOf } from '../src/workspace-brief.js';
+import { workOf } from '../src/workspace-start.js';
 
 const ANSWERS = JSON.parse(
   readFileSync(new URL('./fixtures/classifier/opus-p2-answers.json', import.meta.url), 'utf8'),
@@ -161,7 +163,7 @@ describe('startFromIssue (HV10b)', () => {
     // Only the kind's own parts with text: a fix's, none of a feature's empty "goal".
     expect(Object.keys(request.parts ?? {}).sort()).toEqual(
       Object.entries(TAKE.parts)
-        .filter(([, text]) => text.trim() !== '')
+        .filter(([part, text]) => text.trim() !== '' && partsOf('fix').includes(part as never))
         .map(([part]) => part)
         .sort(),
     );
@@ -285,6 +287,67 @@ describe('startFromIssue (HV10b)', () => {
     ]);
     expect([a.status, b.status].sort()).toEqual(['fulfilled', 'rejected']);
     expect(started).toHaveLength(1);
+  });
+});
+
+describe('startFromIssue: a take with parts of other kinds (HV12)', () => {
+  const REAL = {
+    ...TAKE,
+    kind: 'fix' as const,
+    parts: {
+      ...TAKE.parts,
+      happens: "`parse('1h 30m')` throws a TypeError when units are separated by a space.",
+      known: "Expected result: `5400000`, the same as `parse('1h30m')`.",
+      outOfScope: 'No new dependencies and no CI or release changes.',
+    },
+  };
+
+  it("starts it: only the kind's parts reach the start, the others' text kept in Notes", async () => {
+    const { service, started } = starter({ record: recordOf({ answer: REAL }) });
+    await service.start(3, { by: 'page' });
+    const request = started[0]!;
+    expect(() => workOf(request)).not.toThrow();
+    expect(Object.keys(request.parts ?? {}).every((p) => partsOf('fix').includes(p as never))).toBe(
+      true,
+    );
+    expect(request.parts?.notes).toContain(
+      "Expected result: `5400000`, the same as `parse('1h30m')`.",
+    );
+    expect(request.parts?.notes).toContain('No new dependencies and no CI or release changes.');
+  });
+
+  it("keeps each other part under its heading, after the classifier's own notes (decision 1080)", async () => {
+    const { service, started } = starter({ record: recordOf({ answer: REAL }) });
+    await service.start(3, { by: 'page' });
+    expect(started[0]!.parts?.notes).toBe(
+      `${TAKE.parts.notes}\n\n` +
+        "What is known: Expected result: `5400000`, the same as `parse('1h30m')`.\n\n" +
+        'Out of scope: No new dependencies and no CI or release changes.',
+    );
+    // A feature keeps its own Out of scope; a fix's How to reproduce goes to its Notes.
+    const feature = {
+      ...REAL,
+      kind: 'feature' as const,
+      parts: { ...REAL.parts, goal: 'Parse spaced units.', notes: '' },
+    };
+    const other = starter({ record: recordOf({ answer: feature }) });
+    await other.service.start(3, { by: 'page' });
+    const parts = other.started[0]!.parts!;
+    expect(parts.outOfScope).toBe('No new dependencies and no CI or release changes.');
+    expect(parts.notes).toMatch(/^What happens: `parse/);
+    expect(parts.notes).toContain('\n\nHow to reproduce: 1. Set GITHUB_TOKEN.');
+    expect(() => workOf(other.started[0]!)).not.toThrow();
+  });
+
+  it("refuses with words a take whose Notes, with the other parts, pass the brief's limit", async () => {
+    const long = { ...REAL, parts: { ...REAL.parts, known: 'k'.repeat(MAX_BRIEF) } };
+    const { service, started } = starter({ record: recordOf({ answer: long }) });
+    const refused = await refusal(service.start(3, { by: 'page' }));
+    expect(refused.status).toBe(409);
+    expect(refused.message).toMatch(
+      /^Issue #3's brief is \d[\d,]* characters with the parts a fix has no place for kept in its Notes: a brief is at most 20,000/,
+    );
+    expect(started).toEqual([]);
   });
 });
 
