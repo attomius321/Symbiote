@@ -2,7 +2,7 @@
 
 [Index](../PLAN.md) · Found by [HV12's real run](../journal/hv12-issue-loop-real-run.md)
 
-**Status:** planned (2026-11-14) by the spike `spike/hv12-issue-loop-real-run`. Not started.
+**Status:** built, ready for review (2026-11-14). Planned by the spike `spike/hv12-issue-loop-real-run`.
 
 **Kind** fix · **Branch** `fix/issue-resumed-answer` · **Size** S · **Depends on** none
 
@@ -62,3 +62,36 @@ due in the issue's events.
 
 The tests above; HV11's answer tests unchanged; `pnpm check`, `pnpm build`;
 `issues-answered.spec.ts`.
+
+## Decisions
+
+1084 was free on `main` and every branch on 2026-11-14 (the brief set aside 1084–1085).
+
+| # | Question | Decision | Why |
+|---|---|---|---|
+| 1084 | What does an issue say when Hive's rounds go on after Hive stopped its workspace? (extends 1020's steps and 1072's stops) | **A step, `resumed`: "Symbiote's Hive is working on this again in `<branch>`.", `symbiote: working` added, the other three removed. Only a `rounds-again` that follows a stop (`after: 'stuck'` in its event) is one; its key is `resumed:<branch>:<at>`, one answer a restart. Rounds that start again in their middle say nothing** | The last word on the issue was "stopped" while Hive worked (HV12: 6 to 7 minutes on issues 1 and 2). The rounds' event is what knows the step before; a message in the middle of the rounds leaves the issue right already. A workspace can stop and go on more than once, as a stop can (1072's `stopped:<branch>:<at>`) |
+
+## As built
+
+As planned. `roundsAgain` (`packages/cli/src/hive-round.ts`) adds `after: 'stuck'` to its event
+when the record it leaves is at `stuck`; Hive's `answered` takes `rounds-again` among the events it
+may answer (`ANSWERED`). `answerOfHiveEvent` (`issue-answering.ts`) makes a `resumed` step of it,
+and `issue-answer.ts` gives the step its key, sentence and label. Of `roundsAgain`'s five callers,
+only `waiting` (`hive-landing.ts`) runs at `stuck`: the person's message to a stopped workspace.
+The others run at `landing`, `checking`, `reviewing` or a paused `writing`, in the middle of the
+rounds.
+
+The step counts toward the 6 comments an issue (decision 1022): past them, its labels still move.
+
+## Results
+
+- The plan's two tests (`issue-answering.test.ts`): the first red on `main` as the plan says
+  (`expected null to deeply equal { step: 'resumed', branch: 'b', …(1) }`), the second green
+  before and after.
+- `issue-answer.test.ts`: the sentence and labels, and two restarts' keys apart.
+- `hive-runner.test.ts`, its own describe block: a workspace from issue #12 stopped (no forge to
+  open a request), the person's message, `resumed` due once; stopped and messaged again, a second
+  `resumed` with its own key (4 due steps, 4 keys). A message at `landing` (in the middle of the
+  rounds): `rounds-again`, nothing due. The first was red before the fix (`expected [ 'stopped' ]
+  to deeply equal [ 'stopped', 'resumed' ]`).
+- HV11's answer tests unchanged and green.

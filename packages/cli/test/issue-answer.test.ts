@@ -133,6 +133,22 @@ describe('the fixed sentences (decision 1019)', () => {
     ).toBe('Symbiote stopped work on this: its merge request was closed without a merge.');
   });
 
+  it('resumed: working again in the branch, the working label, the others removed', () => {
+    const answer = answerOf(
+      { step: 'resumed', branch: 'fix/3-x', at: '2026-11-14T13:01:10Z' },
+      LABELS,
+      'github',
+    );
+    expect(answer.comment).toBe("Symbiote's Hive is working on this again in `fix/3-x`.");
+    expect(names(answer.add)).toEqual(['symbiote: working']);
+    expect(answer.remove).toEqual([
+      'symbiote: question',
+      'symbiote: declined',
+      'symbiote: stopped',
+    ]);
+    expect(answer.close).toBeUndefined();
+  });
+
   it('keeps backticks out of the values it quotes as code', () => {
     const answer = answerOf({ step: 'taken', branch: 'fix/`x`' }, LABELS, 'github');
     expect(answer.comment).toBe("Symbiote's Hive is working on this in `fix/x`.");
@@ -149,6 +165,9 @@ describe('the fixed sentences (decision 1019)', () => {
     expect(answerKey({ step: 'stopped', branch: 'b', at: 'T', stop: 'budget' })).toBe(
       'stopped:b:T',
     );
+    // Each restart after a stop is its own step.
+    expect(answerKey({ step: 'resumed', branch: 'b', at: 'T' })).toBe('resumed:b:T');
+    expect(answerKey({ step: 'resumed', branch: 'b', at: 'U' })).toBe('resumed:b:U');
   });
 });
 

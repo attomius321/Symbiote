@@ -608,6 +608,7 @@ matters. Hive's runner writes it at its next look, while Hive is on:
 | Landed through the merge queue | "Landed in `<branch>` at `<commit>`." | removed |
 | Landed through a request | none | removed |
 | Hive stops the workspace | "Symbiote stopped work on this: <why>." | `symbiote: stopped` |
+| You message a stopped workspace and Hive goes on | "Symbiote's Hive is working on this again in `<branch>`." | `symbiote: working` |
 
 Each step adds its label and removes the other three. Symbiote makes the four labels in the
 project the first time it sets one. A landed issue is closed: through the merge queue, by
