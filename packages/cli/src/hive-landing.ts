@@ -11,6 +11,7 @@ import type { HiveContext } from './hive-context.js';
 import { awaiting, type HiveRoundSteps, lastLines, QUEUED } from './hive-round.js';
 import type { HiveCheckSteps } from './hive-checking.js';
 import { requestWords, type HiveForgeSteps, approvalOf } from './hive-forge.js';
+import { refusedByCheckout } from './merge-land.js';
 
 /** The merge queue's states while a merge runs or waits its turn. */
 const MERGING: ReadonlySet<MergeState> = new Set<MergeState>([
@@ -307,7 +308,8 @@ export function hiveLand(
       state: entry.state,
       ...(entry.message ? { message: entry.message } : {}),
     } as const;
-    if (MERGING.has(entry.state)) {
+    // The queue's own `ready` lands a moment later (HV12, decision 1089): it waits as merging does.
+    if (MERGING.has(entry.state) || (entry.state === 'ready' && !refusedByCheckout(entry))) {
       if (last.state !== entry.state || last.message !== entry.message) {
         const now: HiveLanding = { ...last, ...said };
         if (!entry.message) delete now.message;

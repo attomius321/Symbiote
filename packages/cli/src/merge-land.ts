@@ -16,6 +16,21 @@ import { type MergerContext, MergeRefused, short } from './merge-context.js';
 import type { MergeTargetSteps } from './merge-targets.js';
 import { readMergeConfig } from './merge-config.js';
 
+/** The words of a landing the target's checkout refused: the entry waits at `ready` with them. */
+function notMoved(into: string, where: string, why: string): string {
+  return `${into} was not moved${where}: ${why}`;
+}
+
+/**
+ * An entry at `ready` because the target's checkout refused its fast-forward (decision 770), not
+ * one the queue is about to land (HV12, decision 1089).
+ */
+export function refusedByCheckout(entry: MergeEntry): boolean {
+  return (
+    entry.state === 'ready' && (entry.message?.startsWith(`${entry.into} was not moved`) ?? false)
+  );
+}
+
 /** The merger's land steps. */
 export function mergeLand(
   {
@@ -28,10 +43,24 @@ export function mergeLand(
   }: Pick<MergerContext, 'fresh' | 'logs' | 'now' | 'repo' | 'root' | 'set'>,
   { tipOf }: Pick<MergeTargetSteps, 'tipOf'>,
 ) {
+  /** The entries landing now: a second landing of one is refused (HV12, decision 1089). */
+  const landing = new Set<string>();
+
   /** Moves `into` to the merge, or says why not; merged again when `into` moved meanwhile. */
   async function landEntry(entry: MergeEntry): Promise<MergeEntry> {
-    const { id, into, merge, base } = entry;
+    const { id, branch, merge, base } = entry;
     if (!merge || !base) throw new MergeRefused('nothing merged to land', 409);
+    if (landing.has(id)) throw new MergeRefused(`${branch} is landing`, 409);
+    landing.add(id);
+    try {
+      return await landOnce(entry, merge, base);
+    } finally {
+      landing.delete(id);
+    }
+  }
+
+  async function landOnce(entry: MergeEntry, merge: string, base: string): Promise<MergeEntry> {
+    const { id, into } = entry;
     const log = logs.of(id);
     log.step('land', `Land in ${into}`);
     const refs = await listRefs(repo);
@@ -60,12 +89,10 @@ export function mergeLand(
     } catch (error) {
       if (error instanceof MergeStepRefused) {
         const where = holder ? ` in ${holder.path}` : '';
-        log.out(`${into} was not moved${where}: ${error.message}\n`);
+        const message = notMoved(into, where, error.message);
+        log.out(`${message}\n`);
         log.end(false);
-        return set(id, {
-          state: 'ready',
-          message: `${into} was not moved${where}: ${error.message}`,
-        });
+        return set(id, { state: 'ready', message });
       }
       log.end(false);
       throw error;
@@ -75,6 +102,15 @@ export function mergeLand(
         ? `${into} fast-forwarded to ${short(merge)} in ${holder.path}\n`
         : `${into} set to ${short(merge)}: checked out nowhere\n`,
     );
+    const hive = entry.by === 'hive';
+    if (hive && pushing) {
+      // Hive reads `landed` as done and copies its `pushed` (HV12, decision 1088): landed and
+      // pushed in one write. A refusal's words go first, or a slow push reads as refused again.
+      if (entry.message) await set(id, { message: undefined });
+      const pushed = await pushSaid(into, merge, true, log);
+      log.end(true);
+      return set(id, { state: 'landed', landed: now().toISOString(), pushed });
+    }
     const landed = await set(id, {
       state: 'landed',
       landed: now().toISOString(),
@@ -84,14 +120,25 @@ export function mergeLand(
       log.end(true);
       return landed;
     }
-    const pushed = await push(into, merge, entry.by === 'hive');
+    const pushed = await pushSaid(into, merge, hive, log);
+    log.end(true);
+    return set(id, { pushed });
+  }
+
+  /** Pushes the landed target, saying in the entry's log how it went. */
+  async function pushSaid(
+    into: string,
+    sha: string,
+    hive: boolean,
+    log: ReturnType<typeof logs.of>,
+  ): Promise<NonNullable<MergeEntry['pushed']>> {
+    const pushed = await push(into, sha, hive);
     log.out(
       pushed.ok
         ? `Pushed to ${pushed.remote}\n`
         : `Not pushed${pushed.remote ? ` to ${pushed.remote}` : ''}: ${pushed.error}\n`,
     );
-    log.end(true);
-    return set(id, { pushed });
+    return pushed;
   }
 
   /** Where a branch is pushed and fetched: its upstream, else `origin`, else the first remote. */
