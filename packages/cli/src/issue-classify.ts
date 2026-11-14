@@ -26,7 +26,7 @@ import {
 import { issueSnapshot, withoutOwnTags } from './issue-snapshot.js';
 import { runWithInput, type RunWithInput } from './programs.js';
 import { claudeAdviceArgs } from './workspace-advice.js';
-import { BRIEF_PARTS, KINDS, MAX_BRIEF, MAX_TITLE, briefOf } from './workspace-brief.js';
+import { BRIEF_PARTS, KINDS, MAX_BRIEF, MAX_TITLE, briefOf, partsFor } from './workspace-brief.js';
 
 /** The classifier's model and level unless the project names others (decision 1036). */
 export const CLASSIFIER_MODEL = 'opus';
@@ -172,7 +172,9 @@ export function answerMisfit(value: unknown): string | null {
     if (!a.title.trim() || a.title.length > MAX_TITLE) return 'title';
     const kind = a.kind as WorkKind;
     if (!a.parts[KINDS[kind].required]?.trim()) return 'required part';
-    if (briefOf(kind, a.title, a.parts).length > MAX_BRIEF - ORIGIN_ROOM) return 'brief';
+    if (briefOf(kind, a.title, partsFor(kind, a.parts)).length > MAX_BRIEF - ORIGIN_ROOM) {
+      return 'brief';
+    }
   }
   return null;
 }
@@ -212,7 +214,8 @@ export function personalIn(text: string, markers: readonly PersonalMarker[]): st
 
 /**
  * The brief a writer gets for a take (decision 1004): where it came from, then V24's headings
- * from the classifier's parts. Never the issue's own text.
+ * from the classifier's parts, those its kind has no place for in Notes (decision 1080). Never
+ * the issue's own text.
  */
 export function issueBrief(
   issue: Pick<Issue, 'number' | 'url'>,
@@ -220,7 +223,7 @@ export function issueBrief(
   answer: ClassifierAnswer,
 ): string {
   const origin = `From issue #${issue.number} (${issue.url}), classified at ${at}.`;
-  return `${origin}\n\n${briefOf(answer.kind, answer.title, answer.parts)}`;
+  return `${origin}\n\n${briefOf(answer.kind, answer.title, partsFor(answer.kind, answer.parts))}`;
 }
 
 const sha256 = (text: string) => createHash('sha256').update(text).digest('hex');

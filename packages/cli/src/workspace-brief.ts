@@ -77,6 +77,27 @@ export const partsOf = (kind: WorkKind): BriefPart[] => {
   );
 };
 
+/**
+ * Parts written without regard to the kind (a classifier's take, fix HV12) as `kind` has them
+ * (decision 1080): its own parts with text; each other part with text added to Notes, after the
+ * Notes given, as `<heading>: <text>`, in the brief's order. Nothing written is lost.
+ */
+export function partsFor(kind: WorkKind, parts: BriefParts): BriefParts {
+  const own = partsOf(kind);
+  const kept: BriefParts = {};
+  const others: string[] = [];
+  for (const part of BRIEF_PARTS) {
+    const text = written(parts[part]);
+    if (text.trim() === '') continue;
+    if (own.includes(part)) kept[part] = parts[part];
+    else others.push(`${HEADINGS[part]}: ${text.trimStart()}`);
+  }
+  if (others.length > 0) {
+    kept.notes = [written(kept.notes), ...others].filter((text) => text !== '').join('\n\n');
+  }
+  return kept;
+}
+
 /** The kinds as the start page offers them. */
 export function workKinds(): WorkKindSpec[] {
   return WORK_KINDS.map((kind) => {
