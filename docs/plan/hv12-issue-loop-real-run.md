@@ -1,12 +1,14 @@
 # HV12 — A real run: issues in, landed and answered, on GitHub and GitLab
 
-[Index](../PLAN.md) · Journal: none yet; measured in
+[Index](../PLAN.md) · [Journal](../journal/hv12-issue-loop-real-run.md); first measured in
 [the chore's journal](../journal/chore-hive-issue-loop-gaps.md)
 
 **Status:** planned (2026-11-12) by the chore `chore/hive-issue-loop-gaps` (from `main` at
-`a47dda3`); not started. A spike that needs the person. It needs
-[HV11](hv11-issue-answered.md), and with it [HV9](hv9-issue-classifier.md) and
-[HV10](hv10-workspace-from-issue.md).
+`a47dda3`). It needs [HV11](hv11-issue-answered.md), and with it [HV9](hv9-issue-classifier.md)
+and [HV10](hv10-workspace-from-issue.md). The GitHub half ran on 2026-11-14 on
+`spike/hv12-issue-loop-real-run` (from `main` at `53c6349`), ready for review: five steps failed,
+each now a fix plan with its failing test (As built, below). The GitLab half is
+[HV12b](https://github.com/attomius321/Symbiote/issues/3) (decision 1079).
 
 **Problem**. Most of Hive's loop has run for real, in this repository and in scratch ones. The
 parts an issue's loop adds on top have not, and some older parts never met a real forge:
@@ -101,3 +103,54 @@ failing test first. The run is repeated for the steps those fixes touch.
 
 **Not in HV12**: a public repository; issues from people other than the person; a run of more
 than one day.
+
+## As built (2026-11-14)
+
+The person's choices before the run: GitHub only now, GitLab later (HV12b, decision 1079); one
+private scratch repository on their account, made with their `gh`; the 8 issues opened with their
+`gh`. The person trusted the clone, turned Hive on, answered issue 3 and merged the requests.
+What differs from the plan:
+
+- **GitHub only, all 8 issues on it.** Issues 1 and 2 landed through a request first. Their merges
+  were then reverted on the scratch `main` and the issues reopened, and they landed again through
+  the queue (`hive.issues.lands: queue`). So 4 issues were taken, in 6 workspaces.
+- **The takes' records were edited by hand** before each start: every real take filled parts its
+  kind does not have, and the start refused it
+  ([fix-issue-start-parts](fix-issue-start-parts.md)).
+- **The person allowed `registry.npmjs.org`** and restarted two stopped writers. npm's update check
+  had been refused ([fix-writer-npm-update-check](fix-writer-npm-update-check.md)). Claude Code's
+  auto mode refused the run's agent this setting.
+- **A usage pause was forced**: `hive.usage.pauseAt` at 30 % for one start, under the week's 39 %,
+  then back to 90 %. None came on its own.
+- **Issue 7 never ran.** The classifier refused it, as it did issue 6.
+- **The person resolved two conflicts on GitHub** before Hive's 60 s poll saw them. Hive's own
+  path for a request that cannot merge did not run.
+- The run's seed project, issue texts, scripts and failing tests are in
+  `spikes/hv12-issue-loop-real-run/`, for HV12b and for the run after the fixes.
+
+## Results (2026-11-14)
+
+8 of 8 decisions as expected. 6 landings: 4 through pull requests the person merged and 2 through
+the queue, which pushed `main` to GitHub. Every issue was answered and the landed ones closed. 22
+minutes from Hive on to the last landing; $2.11 (writers $0.85, reviews $0.88, classifier $0.38).
+The journal has the timeline, each step's time and cost, and screenshots.
+
+| Step | Result |
+|---|---|
+| Landing through a request | proven: opened, reviewed, merged by the person, landed; `Closes #n` closed each issue. GitHub knew `mergeable` within 4 s; Hive's 60 s poll never met `null`. Not proven: a request that cannot merge |
+| Pushing the start branch | the pushes reached GitHub; both recorded `pushed: false`: [fix-queue-landing-push](fix-queue-landing-push.md) |
+| The usage pause | proven on a real read with a forced threshold: paused at once, went on 1 s after the threshold was raised |
+| The classifier | 8 of 8; it reads Hive's own answers as the owner's: [fix-classifier-own-answers](fix-classifier-own-answers.md) |
+| The writer's reach | no credential, no web, no MCP; Bash only; npm's own update check stops the writer: [fix-writer-npm-update-check](fix-writer-npm-update-check.md) |
+| Writing to issues | comments, labels and closing as HV11 says; a restarted workspace kept "stopped": [fix-issue-resumed-answer](fix-issue-resumed-answer.md) |
+| Claude Code's trust | not run: trusted first, as planned (HV7's part) |
+| The start from an issue (not in the table) | every real take refused: [fix-issue-start-parts](fix-issue-start-parts.md) |
+
+Decision 1026 stands: HV13 waits for these five fixes to merge and the run to be repeated on the
+steps they touch.
+
+**Decision (2026-11-14)**:
+
+| # | Question | Decision | Why |
+|---|---|---|---|
+| 1079 | Where does HV12 run now? (amends 1024, 1025) | **On GitHub only: the 8 issues on one private scratch repository; issues 1 and 2 land through a request, then, reverted and reopened, through the queue. The GitLab half, four issues and the swap, is HV12b ([issue #3](https://github.com/attomius321/Symbiote/issues/3))** | The person's choice; GitLab needs an account, a token and a project the person sets up later |

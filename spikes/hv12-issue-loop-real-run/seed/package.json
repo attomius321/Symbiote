@@ -1,0 +1,10 @@
+{
+  "name": "durations",
+  "version": "0.1.0",
+  "description": "Parse and format time spans such as \"1h 30m\".",
+  "type": "module",
+  "main": "src/index.js",
+  "bin": { "dur": "bin/dur.js" },
+  "scripts": { "test": "node --test" },
+  "license": "MIT"
+}
