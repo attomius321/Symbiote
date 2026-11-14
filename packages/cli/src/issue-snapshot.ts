@@ -1,6 +1,8 @@
 // The issue as the classifier reads it (HV9b, decision 1001): its title, its author's role, its
 // labels, its body and the comments of the project's members and of its author (1043, 1044),
 // cleaned as the Issues page cleans them (IS1, decision 949), at most 20,000 characters, hashed.
+// Symbiote's own answers on the issue (HV11's comments, by the person's account) are left out of
+// the text and the hash, and counted (decision 1086).
 // Anyone can write an issue: Symbiote's own message tags are removed from it, and what the forge
 // would not show (HTML comments, scripts, zero-width and bidirectional characters) is dropped
 // and flagged.
@@ -118,18 +120,42 @@ function commenter(issue: Issue, comment: IssueComment): 'member' | 'author' | n
   return comment.author.login === issue.author.login ? 'author' : null;
 }
 
-/** The snapshot of `issue` taken at `at`. */
-export function issueSnapshot(issue: Issue, at: string): IssueSnapshot {
+/**
+ * A comment's address as an answer's and a read comment's can be compared: its anchor on the
+ * forge (`#issuecomment-<id>`, `#note_<id>`), one comment's whatever host or path spells it (GitLab
+ * reads `/-/work_items/<n>#note_<id>`, an answer records `/-/issues/<n>#note_<id>`); else whole.
+ */
+function commentKey(url: string): string {
+  return /#(issuecomment-\d+|note_\d+)$/.exec(url)?.[1] ?? url;
+}
+
+/** Article and role: "an owner", "a member". */
+const withArticle = (role: string) => `${/^[aeiou]/i.test(role) ? 'an' : 'a'} ${role}`;
+
+/**
+ * The snapshot of `issue` taken at `at`. `own`: the addresses of Symbiote's own answers on it
+ * (its `answered` events, HV11), left out of the text and the hash, counted on a line of their own.
+ */
+export function issueSnapshot(
+  issue: Issue,
+  at: string,
+  { own = [] }: { own?: readonly string[] } = {},
+): IssueSnapshot {
   let hidden = false;
   const clean = (markdown: string) => {
     const cleaned = cleanIssueText(markdown);
     hidden ||= cleaned.hidden;
     return cleaned.text;
   };
+  const ours = new Set(own.map(commentKey));
+  const isOurs = (comment: IssueComment) =>
+    comment.url !== undefined && ours.has(commentKey(comment.url));
+  const answers = issue.thread.filter(isOurs).length;
   const comments = issue.thread
+    .filter((comment) => !isOurs(comment))
     .map((comment) => ({ comment, by: commenter(issue, comment) }))
     .filter((c): c is { comment: IssueComment; by: 'member' | 'author' } => c.by !== null);
-  const outside = issue.thread.length - comments.length + issue.moreComments;
+  const outside = issue.thread.length - answers - comments.length + issue.moreComments;
   const role = issue.author.role ?? 'not given without a token';
   const lines = [
     `Title: ${clean(issue.title)}`,
@@ -137,12 +163,15 @@ export function issueSnapshot(issue: Issue, at: string): IssueSnapshot {
     `Labels: ${issue.labels.length > 0 ? issue.labels.map((l) => clean(l.name)).join(', ') : 'none'}`,
     `Opened: ${issue.created}; last updated: ${issue.updated}`,
     `Comments by people outside the project, left out: ${outside}${issue.commentsNeedToken ? ' (comments need a token: none read)' : ''}`,
+    // Only when there are some: an issue Symbiote never answered reads as it did before HV12.
+    ...(answers > 0 ? [`Symbiote's own answers, left out: ${answers}`] : []),
     '',
     'Body:',
     clean(issue.body) || '(empty)',
   ];
   for (const { comment, by } of comments) {
-    const who = by === 'member' ? `a ${comment.author.role ?? 'member'}` : "the issue's author";
+    const who =
+      by === 'member' ? withArticle(comment.author.role ?? 'member') : "the issue's author";
     lines.push('', `Comment by ${who}, ${comment.created}:`, clean(comment.body) || '(empty)');
   }
   const flags: IssueSnapshotFlag[] = hidden ? ['hidden-text'] : [];

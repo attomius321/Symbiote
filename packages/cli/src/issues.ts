@@ -26,11 +26,15 @@ const FOUND_MS = 30_000;
 
 type Found = Awaited<ReturnType<typeof originForge>>;
 
-/** The issues of the forge `repo`'s origin names, with the token `env` gives or none. */
+/**
+ * The issues of the forge `repo`'s origin names, with the token `env` gives or none. `own`: the
+ * addresses of Symbiote's own answers on an issue, left out of its snapshot's hash (1086).
+ */
 export function issuesService(
   repo: GitRepo,
   env: Env,
   make?: (url: string, env: Env) => Forge,
+  own?: (number: number) => Promise<readonly string[]>,
 ): IssuesService {
   let found: { at: number; value: Promise<Found> } | undefined;
   const origin = () => {
@@ -75,10 +79,11 @@ export function issuesService(
     list: (query) => ask((forge) => forge.listIssues(query)),
     one: (number) =>
       ask(async (forge) => {
-        const issue = await forge.getIssue(number);
+        const [issue, answers] = await Promise.all([forge.getIssue(number), own?.(number)]);
         // The hash the classifier's snapshot would have now (HV9c, decision 1057): the page sees
         // an edit since a classification with no read of the forge more.
-        return { issue, snapshot: issueSnapshot(issue, new Date().toISOString()).hash };
+        const snapshot = issueSnapshot(issue, new Date().toISOString(), { own: answers ?? [] });
+        return { issue, snapshot: snapshot.hash };
       }),
   };
 }

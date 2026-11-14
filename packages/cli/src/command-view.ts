@@ -54,6 +54,7 @@ import { skillsService } from './skills.js';
 import { readClaudeUsage, readCodexUsage, usageService } from './usage.js';
 import { workspaces } from './workspaces.js';
 import { dueAnswer, hiveAnsweringService } from './issue-answering.js';
+import { ownAnswers } from './issue-record.js';
 import { viewIssueStarter } from './issue-start.js';
 import { hiveSandboxService } from './writer-reach.js';
 import { symbioteFolder } from './workspace-record.js';
@@ -216,7 +217,10 @@ export async function view(argv: string[], given: CliContext): Promise<number> {
     hivePacing: pacing,
   });
   // The Issues page (IS1) and the classifier (HV9b), shared with the start from an issue (HV10).
-  const repoIssues = issuesService(repo, ctx.env);
+  // Symbiote's own answers on an issue are never part of what the classifier reads (1086).
+  const repoIssues = issuesService(repo, ctx.env, undefined, async (number) =>
+    ownAnswers(symbioteFolder(await reviewPlace(repo, cacheDir)), number),
+  );
   const classifier = viewIssueClassifier(repo, cacheDir, {
     env: ctx.env,
     hive: () => hive.on(),

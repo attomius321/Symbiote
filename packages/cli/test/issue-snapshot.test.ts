@@ -304,3 +304,81 @@ describe('HV9a’s hostile sets, as the classifier reads them', () => {
     }
   });
 });
+
+describe("Symbiote's own answers on the issue (HV12)", () => {
+  const own = (issue: Issue): IssueComment => ({
+    author: { login: 'maintainer', role: 'owner' },
+    body: 'A pull request is open: https://github.com/vitejs/vite/pull/9.',
+    created: '2026-11-14T13:01:38Z',
+    url: `${issue.url}#issuecomment-6877633148`,
+  });
+
+  it('are left out of what the classifier reads, and of the hash', () => {
+    const issue = viteIssue();
+    const answer = own(issue);
+    const before = issueSnapshot(issue, AT);
+    const after = (issueSnapshot as (...a: unknown[]) => ReturnType<typeof issueSnapshot>)(
+      { ...issue, thread: [...issue.thread, answer] },
+      AT,
+      { own: [answer.url] },
+    );
+    expect(after.text).not.toContain('A pull request is open');
+    expect(after.hash).toBe(before.hash);
+  });
+
+  it('names an owner\'s comment "an owner"', () => {
+    const issue = viteIssue();
+    const comment = { ...own(issue), body: 'It still fails on 6.1.', url: undefined };
+    const { text } = issueSnapshot({ ...issue, thread: [comment] }, AT);
+    expect(text).toContain('Comment by an owner,');
+  });
+
+  it('are counted on a line of their own; the members’ and the author’s counts unchanged', () => {
+    const issue = viteIssue();
+    const first = own(issue);
+    const second = { ...own(issue), body: 'Working on this.', url: `${issue.url}#issuecomment-2` };
+    const before = issueSnapshot(issue, AT);
+    const after = issueSnapshot({ ...issue, thread: [first, ...issue.thread, second] }, AT, {
+      own: [first.url!, second.url],
+    });
+    expect(after.text.split('\n').slice(4, 7)).toEqual([
+      'Comments by people outside the project, left out: 1',
+      "Symbiote's own answers, left out: 2",
+      '',
+    ]);
+    expect(after.text).not.toContain('Working on this.');
+    expect(after).toMatchObject({ read: before.read, outside: before.outside });
+    // None of its own on the issue: the text as before, no line of them.
+    expect(issueSnapshot(issue, AT, { own: [first.url!] }).text).toBe(before.text);
+  });
+
+  it('reads the person’s own comment with the same account: only an answered address is left out', () => {
+    const issue = viteIssue();
+    const byHand = {
+      ...own(issue),
+      body: 'Still broken here.',
+      url: `${issue.url}#issuecomment-3`,
+    };
+    const after = issueSnapshot({ ...issue, thread: [...issue.thread, byHand] }, AT, {
+      own: [own(issue).url!],
+    });
+    expect(after.text).toContain('Still broken here.');
+    expect(after.text).not.toContain("Symbiote's own answers");
+    expect(after.hash).not.toBe(issueSnapshot(issue, AT).hash);
+  });
+
+  it('knows a GitLab note by its anchor, whatever host or path spelling the answer recorded', () => {
+    const issue = runnerIssue();
+    const note: IssueComment = {
+      author: { login: 'maintainer', role: 'owner', level: 50 },
+      body: 'Asked: which runner version?',
+      created: '2026-11-14T13:01:38Z',
+      url: `${issue.url}#note_123456`,
+    };
+    const after = issueSnapshot({ ...issue, thread: [...issue.thread, note] }, AT, {
+      own: ['https://GitLab.com/GitLab-org/gitlab-runner/-/issues/40247#note_123456'],
+    });
+    expect(after.text).not.toContain('which runner version');
+    expect(after.hash).toBe(issueSnapshot(issue, AT).hash);
+  });
+});

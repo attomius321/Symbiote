@@ -49,6 +49,7 @@ import {
   type PersonalMarker,
 } from './issue-classify.js';
 import {
+  ownAnswers,
   readIssueEvents,
   readIssueRecord,
   readIssueRecords,
@@ -215,6 +216,7 @@ export function issueClassifier(ctx: {
       if (error instanceof SymbioteError) throw new IssueRefused(error.message, 409);
       throw error;
     }
+    const folder = await ctx.folder();
     const classified = await classifyIssue({
       issue,
       card: await cardOf(forge, config.about),
@@ -225,6 +227,7 @@ export function issueClassifier(ctx: {
       version: claude.version,
       cacheDir: ctx.cacheDir,
       markers: await ctx.markers(),
+      own: await ownAnswers(folder, number),
       ...(ctx.runInput ? { runInput: ctx.runInput } : {}),
       ...(ctx.now ? { now: ctx.now } : {}),
     });
@@ -236,7 +239,6 @@ export function issueClassifier(ctx: {
       state: issue.state,
       ...classified,
     };
-    const folder = await ctx.folder();
     await writeIssueRecord(folder, record);
     // An ask or a refusal is due to be answered on the issue (HV11): Hive's runner writes it.
     const step = askedStep(record);

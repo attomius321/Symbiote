@@ -2,7 +2,7 @@
 
 [Index](../PLAN.md) · Found by [HV12's real run](../journal/hv12-issue-loop-real-run.md)
 
-**Status:** planned (2026-11-14) by the spike `spike/hv12-issue-loop-real-run`. Not started.
+**Status:** built, ready for review (2026-11-14). Planned by the spike `spike/hv12-issue-loop-real-run`.
 
 **Kind** fix · **Branch** `fix/classifier-own-answers` · **Size** S · **Depends on** none
 
@@ -84,3 +84,28 @@ The tests above; HV9b's snapshot tests (the recorded vite and gitlab-runner issu
 sets) unchanged, their hashes too; `pnpm check`, `pnpm build`; `issues-classify.spec.ts`. A record
 classified before the fix reads as changed once (its hash held Hive's answers): say so in the
 journal.
+
+## Decisions
+
+1086 and 1087 were given to this fix; neither was on `main` or any branch on 2026-11-14.
+
+| # | Question | Decision | Why |
+|---|---|---|---|
+| 1086 | Which comments on an issue are Symbiote's own, and what does the snapshot do with them? (narrows 1001's members' comments) | **A comment whose address is one of the issue's `answered` events' URLs (1071). It is left out of the text and the hash, and counted on its own line, "Symbiote's own answers, left out: n", written only when n > 0. Addresses are compared by the comment's anchor (`issuecomment-<id>`, `note_<id>`), else whole. A comment the person writes with the same account is read** | Hive answers with the person's token, so its comments carry the owner's role; the classifier read its stale "A pull request is open" as the owner's words, and each answer changed the hash. The events are the only sure mark: the account is the person's. GitLab reads a note as `/-/work_items/<n>#note_<id>` and an answer records `/-/issues/<n>#note_<id>`, so whole addresses would never match there. With no answer, the text is as it was, and every hash too |
+
+## As built
+
+As planned, with three additions:
+
+- **Comments are matched by their anchor.** The recorded gitlab-runner issue's `web_url` is
+  `…/-/work_items/40247`, while `GitLabForge.commentOnIssue` records `…/-/issues/40247#note_<id>`.
+  Equal addresses would have left no GitLab answer out. The anchor names one comment on the forge.
+- **Both places that hash the issue read the events.** The classifier (`issue-classifier.ts`
+  reads them before `classifyIssue`) and the Issues page's `GET /api/issues/<n>`
+  (`issuesService`'s new `own` argument, given by `command-view.ts`), which the start compares
+  with the record (1011, 1057). One reader, `ownAnswers` in `issue-record.ts`.
+- **The line is written only when there are answers**, so an issue Hive never answered reads
+  exactly as before, its text and its hash.
+
+A record classified before the fix may read as changed once: its hash held the Hive answers that
+were on the issue when it was classified. Classifying it again records a hash without them.

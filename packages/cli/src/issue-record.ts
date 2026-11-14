@@ -226,6 +226,13 @@ export async function readIssueEvents(folder: string, number: number): Promise<I
     });
 }
 
+/** The addresses of Symbiote's own comments on issue `number`: its `answered` events' (HV11). */
+export async function ownAnswers(folder: string, number: number): Promise<string[]> {
+  return (await readIssueEvents(folder, number)).flatMap((event) =>
+    event.event === 'answered' && typeof event.url === 'string' ? [event.url] : [],
+  );
+}
+
 /**
  * Judges the take behind `branch`'s workspace (HV10, decision 1066): under the identity its
  * `started` event recorded, once per workspace; nothing for a workspace no start recorded.
