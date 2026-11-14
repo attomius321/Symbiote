@@ -455,6 +455,20 @@ describe("Hive's events as steps (decisions 1020, 1072)", () => {
   });
 });
 
+describe('a stopped workspace that goes on (HV12)', () => {
+  const at = '2026-11-14T13:01:10Z';
+
+  it('is said on its issue: working again, after a stop', () => {
+    expect(
+      answerOfHiveEvent('rounds-again', { prompt: at, after: 'stuck' }, { branch: 'b', at }),
+    ).toEqual({ step: 'resumed', branch: 'b', at });
+  });
+
+  it('a message in the middle of the rounds says nothing', () => {
+    expect(answerOfHiveEvent('rounds-again', { prompt: at }, { branch: 'b', at })).toBeNull();
+  });
+});
+
 describe("Settings' answering (HV11, decision 1077)", () => {
   it('the setting, the labels, the account and whether it may write; read once in 10 minutes', async () => {
     const s = await setup();

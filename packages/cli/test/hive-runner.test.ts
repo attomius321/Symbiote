@@ -3206,3 +3206,62 @@ describe('A workspace from an issue lands (HV10c, decisions 1016, 1017, 1065, 10
     ]);
   });
 });
+
+describe('A stopped workspace from an issue that goes on (fix/issue-resumed-answer)', () => {
+  /** The steps due on issue #12, in order. */
+  const dueSteps = async (s: Setup) =>
+    (await readIssueEvents(symbioteFolder(s.where), 12)).flatMap((e) =>
+      e.event === 'due' ? [{ key: e.key, step: e.step }] : [],
+    );
+
+  it("a stop, the person's message: one resumed due a restart, each its own key", async () => {
+    const branch = 'fix/12-config-is-null';
+    const repo = repository(['true']);
+    origin(repo);
+    const git = await openRepo(repo.root);
+    const requests = hiveRequests(git, { env: {}, graphOf: () => Promise.reject(new Error('no')) });
+    const s = await setup(repo, { land: true, requests });
+    await s.turn(true);
+    const worktree = await startIssue(s, branch);
+    const runner = s.runner();
+    await s.fake.endTurn(worktree, { files: { 'one.txt': 'one\n' } });
+    await settle(runner, s, async () => (await stepOf(s, branch)) === 'stuck', 'stuck');
+    expect((await dueSteps(s)).map((d) => d.step.step)).toEqual(['stopped']);
+
+    // The person messages the agent: Hive's rounds go on, and the issue says so.
+    await s.service.reply({ branch, text: 'The forge is set now: go on.' });
+    await runner.tick();
+    expect(await readHive(s.where, branch)).toMatchObject({ step: 'writing', round: 1 });
+    await runner.tick();
+    const first = await dueSteps(s);
+    expect(first.map((d) => d.step.step)).toEqual(['stopped', 'resumed']);
+    expect(first[1]?.step).toEqual({ step: 'resumed', branch, at: expect.any(String) as string });
+
+    // Stopped again, and messaged again: a second restart, its own answer.
+    await s.fake.endTurn(worktree);
+    await settle(runner, s, async () => (await stepOf(s, branch)) === 'stuck', 'stuck again');
+    await s.service.reply({ branch, text: 'Once more.' });
+    await runner.tick();
+    const second = await dueSteps(s);
+    expect(second.map((d) => d.step.step)).toEqual(['stopped', 'resumed', 'stopped', 'resumed']);
+    expect(new Set(second.map((d) => d.key)).size).toBe(4);
+  });
+
+  it('a message in the middle of the rounds says nothing on the issue', async () => {
+    const branch = 'fix/12-config-is-null';
+    const runs = join(cache, 'runs.txt');
+    const repo = repository([counted(runs)]);
+    const s = await setup(repo);
+    await s.turn(true);
+    const worktree = await startIssue(s, branch);
+    const runner = s.runner();
+    await s.fake.endTurn(worktree, { files: { 'one.txt': 'one\n' } });
+    await runner.tick();
+    await runner.idle();
+    expect(await readHive(s.where, branch)).toMatchObject({ step: 'landing' });
+    await s.service.reply({ branch, text: 'Is the README current?' });
+    await runner.tick();
+    expect(events(s.where, branch)).toContain('rounds-again');
+    expect(await dueSteps(s)).toEqual([]);
+  });
+});

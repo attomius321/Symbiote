@@ -1,4 +1,4 @@
-// What Symbiote posts on an issue at each step (HV11, decisions 1019, 1020, 1072, 1076): its fixed
+// What Symbiote posts on an issue at each step (HV11, decisions 1019, 1020, 1072, 1076, 1084): its fixed
 // sentences filled with its own values (a branch, a commit, a link), the step's label, the
 // closing. The classifier's question is the one text an agent wrote that is posted, cleaned and
 // cut. The step's values are all an answer is made from: never the reasons, the brief, the
@@ -27,7 +27,9 @@ export type AnswerStep =
   | { step: 'request'; number: number; url: string }
   | { step: 'landed'; branch: string; via: 'queue'; into: string; sha: string }
   | { step: 'landed'; branch: string; via: 'request'; into: string; number: number }
-  | { step: 'stopped'; branch: string; stop: HiveStopKind; at: string };
+  | { step: 'stopped'; branch: string; stop: HiveStopKind; at: string }
+  /** Hive's rounds went on after a stop (the person's message): one answer a restart. */
+  | { step: 'resumed'; branch: string; at: string };
 
 /** The labels of the steps, by role. */
 export interface AnswerLabels {
@@ -90,7 +92,8 @@ export function answerKey(step: AnswerStep): string {
     case 'request':
       return `request:${step.number}`;
     case 'stopped':
-      return `stopped:${step.branch}:${step.at}`;
+    case 'resumed':
+      return `${step.step}:${step.branch}:${step.at}`;
   }
 }
 
@@ -158,6 +161,11 @@ export function answerOf(step: AnswerStep, labels: AnswerLabels, forge: ForgeKin
       return {
         comment: `Symbiote stopped work on this: ${(STOPS[step.stop] ?? STOPS.failed)(request)}.`,
         ...only('stopped'),
+      };
+    case 'resumed':
+      return {
+        comment: `Symbiote's Hive is working on this again in ${code(step.branch)}.`,
+        ...only('working'),
       };
   }
 }

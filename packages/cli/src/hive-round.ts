@@ -59,6 +59,14 @@ export const short = (sha: string) => sha.slice(0, 7);
 /** A branch as one folder's name in Symbiote's cache. */
 export const slug = (branch: string) => branch.replace(/[^\w.-]+/g, '-');
 
+/** Hive's events that may be a step answered on an issue (decisions 1071, 1084). */
+const ANSWERED: ReadonlySet<string> = new Set([
+  'request-opened',
+  'landed',
+  'stuck',
+  'rounds-again',
+]);
+
 /** The same pause as the record's: its reason, window and reset (HV5): an event once a pause. */
 function samePause(recorded: HivePause | undefined, pause: HivePause): boolean {
   return (
@@ -127,7 +135,8 @@ export function hiveRound(
 
   /**
    * A step of a workspace from an issue, due to be answered on it (HV11, decision 1071): a request
-   * opened, landed, stopped with its kind. Hive's runner writes it at its tick.
+   * opened, landed, stopped with its kind, going on after a stop (1084). Hive's runner writes it
+   * at its tick.
    */
   async function answered(
     where: ReviewPlace,
@@ -136,7 +145,7 @@ export function hiveRound(
     data: Record<string, unknown>,
     at: string,
   ): Promise<void> {
-    if (kind !== 'request-opened' && kind !== 'landed' && kind !== 'stuck') return;
+    if (!ANSWERED.has(kind)) return;
     try {
       const workspace = await readRecord(where, branch).catch(() => null);
       if (!workspace?.issue) return;
@@ -442,9 +451,11 @@ export function hiveRound(
   /**
    * The person's message reached the writer: its turn, the rounds and Hive's answers in the
    * person's place counted again (795). A request the person closed is left behind (HV8): the
-   * next landing opens a new one.
+   * next landing opens a new one. After a stop, the event says so (`after: 'stuck'`, decision
+   * 1084): a workspace from an issue says on it that it works again.
    */
   async function roundsAgain(where: ReviewPlace, record: HiveFile, at: string): Promise<void> {
+    const after = record.step === 'stuck' ? { after: 'stuck' as const } : {};
     if (record.request?.state === 'closed') {
       record = { ...record };
       delete record.request;
@@ -464,7 +475,7 @@ export function hiveRound(
         paused: undefined,
       },
       'rounds-again',
-      { prompt: at },
+      { prompt: at, ...after },
     );
   }
 

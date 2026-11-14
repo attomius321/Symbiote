@@ -54,9 +54,10 @@ export async function dueAnswer(
 }
 
 /**
- * A Hive event as a step to answer (decisions 1020, 1072): a request opened, a landing (by the
- * queue, or by a request whose number its entry names), a stop with its kind. Null for any other,
- * and for a stop that names no kind: its note is never posted.
+ * A Hive event as a step to answer (decisions 1020, 1072, 1084): a request opened, a landing (by
+ * the queue, or by a request whose number its entry names), a stop with its kind, the rounds going
+ * on after a stop. Null for any other, for a stop that names no kind (its note is never posted),
+ * and for the rounds starting again in their middle: the issue's label is right already.
  */
 export function answerOfHiveEvent(
   kind: string,
@@ -84,6 +85,9 @@ export function answerOfHiveEvent(
     return typeof stop === 'string' && (HIVE_STOPS as readonly string[]).includes(stop)
       ? { step: 'stopped', branch, stop: stop as HiveStopKind, at }
       : null;
+  }
+  if (kind === 'rounds-again') {
+    return data.after === 'stuck' ? { step: 'resumed', branch, at } : null;
   }
   return null;
 }
