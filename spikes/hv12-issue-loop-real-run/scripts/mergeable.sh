@@ -1,8 +1,8 @@
 #!/bin/bash
 # For each new "request:N" answer due, reads PR N every second until GitHub knows `mergeable`.
-R=attomius321/symbiote-hv12-scratch
-F=/tmp/hv12-real/loc/symbiote/issues/answers.jsonl
-done_list=" 9 10 "
+R=${HV12_REPO:-attomius321/symbiote-hv12-scratch}
+F=${HV12_CLONE:-/tmp/hv12-real/loc}/symbiote/issues/answers.jsonl
+done_list=" ${HV12_SEEN:-9 10} "
 while true; do
   for n in $(grep -o '"key":"request:[0-9]*"' $F | grep -o '[0-9]*' | sort -u); do
     case "$done_list" in *" $n "*) continue;; esac

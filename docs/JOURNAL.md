@@ -491,3 +491,4 @@ merge commit.
 - 2026-11-14 [Fix — a queue landing's push is recorded as it went: `landed` with its push answered, landed once](journal/fix-queue-landing-push.md)
 - 2026-11-14 [Fix — the classifier reads no answer of Symbiote's own: its comments and labels left out](journal/fix-classifier-own-answers.md)
 - 2026-11-14 [Fix — npm's own update check does not stop an issue's writer: the check off, a `package.json` names npm](journal/fix-writer-npm-update-check.md)
+- 2026-11-14 [HV12 again — the GitHub run after its five fixes: all five proven, a request that cannot merge made mergeable by Hive; one fix planned](journal/hv12-issue-loop-real-run.md)

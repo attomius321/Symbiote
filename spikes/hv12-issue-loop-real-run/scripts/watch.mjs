@@ -1,7 +1,7 @@
 // Prints each new line of the scratch clone's Hive and issue event files, shortened.
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
-const root = '/tmp/hv12-real/loc/symbiote';
+const root = `${process.env.HV12_CLONE ?? '/tmp/hv12-real/loc'}/symbiote`;
 const seen = new Map();
 const quiet = new Set((process.env.QUIET ?? '').split(',').filter(Boolean));
 function files(dir) {
