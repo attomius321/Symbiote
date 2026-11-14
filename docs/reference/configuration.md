@@ -563,14 +563,16 @@ no MCP server:
 
 - **Its variables** are set in the settings' `env`, because `claude --bg` hands the session to
   Claude Code's daemon, whose environment the writer gets: `GH_CONFIG_DIR` is an empty folder,
-  and the caches of npm, pnpm, Yarn, bun, pip, Cargo and Go are one folder for the workspace.
+  the caches of npm, pnpm, Yarn, bun, pip, Cargo and Go are one folder for the workspace, and
+  `npm_config_update_notifier=false` turns npm's and pnpm's update check off: on a new cache it
+  would ask the registry for npm's version on any command, `npm test` included.
 - **Claude Code's sandbox** is on and required, with every command run in it and none outside.
   The worktree and the cache folder are the only places it writes outside its own temp folder.
   The forge's tokens and every variable whose name says it holds a secret are hidden from its
   commands, and so are `~/.config/gh`, `~/.config/glab-cli`, `~/.ssh`, `~/.git-credentials` and
   `~/.netrc`.
-- **Its network** is the hosts of the ecosystems the worktree's root files name (`package-lock.json`,
-  `pnpm-lock.yaml`, `bun.lock`: `registry.npmjs.org`; `yarn.lock`; `requirements*.txt`,
+- **Its network** is the hosts of the ecosystems the worktree's root files name (`package.json`,
+  `package-lock.json`, `pnpm-lock.yaml`, `bun.lock`: `registry.npmjs.org`; `yarn.lock`; `requirements*.txt`,
   `pyproject.toml`, `uv.lock`; `Cargo.lock`; `go.sum`; `pom.xml`; `build.gradle`; `Gemfile.lock`;
   `*.csproj`; `composer.lock`; `deno.json`), plus `hive.sandbox.allowedDomains`. No forge host is
   allowed unless you list it. The allowlist is strict: a command cannot add hosts of its own.

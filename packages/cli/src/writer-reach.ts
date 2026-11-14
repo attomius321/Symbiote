@@ -32,9 +32,12 @@ export interface Ecosystem {
  */
 const ECOSYSTEMS: { name: string; match: (file: string) => boolean; hosts: string[] }[] = [
   {
+    // A package.json alone too: `npm install` in a repository with no lockfile reaches the
+    // registry (HV12).
     name: 'npm',
     match: (f) =>
       [
+        'package.json',
         'package-lock.json',
         'npm-shrinkwrap.json',
         'pnpm-lock.yaml',
@@ -177,7 +180,9 @@ export function writerFolder(cacheDir: string, worktree: string): string {
 }
 
 /**
- * The variables the writer's `env` sets: an empty gh folder, the installs' caches (1053). Never
+ * The variables the writer's `env` sets: an empty gh folder, the installs' caches (1053), npm's
+ * and pnpm's update check off: on a fresh cache it fetches npm's version from the registry even
+ * for `npm test`, and a refused host stops the workspace (1064; HV12). Never
  * `TMPDIR`: the sandbox makes its sockets there, and a path that long stopped every command
  * (Claude Code 2.1.325, "Failed to create bridge sockets"); its own temp folder is writable.
  */
@@ -187,6 +192,7 @@ function writerEnv(folder: string): Record<string, string> {
     GH_CONFIG_DIR: join(folder, 'gh'),
     npm_config_cache: join(cache, 'npm'),
     npm_config_store_dir: join(cache, 'pnpm'),
+    npm_config_update_notifier: 'false',
     YARN_CACHE_FOLDER: join(cache, 'yarn'),
     BUN_INSTALL_CACHE_DIR: join(cache, 'bun'),
     PIP_CACHE_DIR: join(cache, 'pip'),
