@@ -3,9 +3,9 @@
 import { readFileSync, readdirSync } from 'node:fs';
 import { chromium } from '@playwright/test';
 
-const BASE = 'http://127.0.0.1:4812';
+const BASE = `http://127.0.0.1:${process.env.HV12_PORT ?? 4812}`;
 const out = new URL('.', import.meta.url).pathname;
-const run = `${process.env.HOME}/.cache/symbiote-hv12/running/`;
+const run = `${process.env.HV12_CACHE ?? `${process.env.HOME}/.cache/symbiote-hv12`}/running/`;
 const bridge = JSON.parse(readFileSync(run + readdirSync(run).find((f) => f.endsWith('.json')), 'utf8')).key;
 
 async function token() {

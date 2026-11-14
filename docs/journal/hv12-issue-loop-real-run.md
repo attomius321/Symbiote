@@ -281,3 +281,245 @@ The Run tab of issue 2's request landing (merged on GitHub through #10):
 - A usage pause that came on its own.
 - Claude Code's trust left unsaid: the clone was trusted first.
 - The steps the fixes touch, which the run should repeat once they merge.
+
+## HV12 again — the GitHub run after its five fixes (2026-11-14, branch `spike/hv12-real-run-again`)
+
+**The answer.** Yes, with one stop the work did not need. Hive's loop from an issue ran end to end
+on GitHub with no hand edit of any record. All five fixes held on the real run. All 8 issues got
+the decision the plan expects, as in the first run. Then a third pass let Hive's own path for a
+request that cannot merge run to the end: Hive saw the conflict, its writer merged `main` in, and
+the request was mergeable again 1 min 46 s after the merge that broke it. The one failure: in the
+first pass, the person resolved #9's conflict on GitHub and merged it while Hive's writer was
+merging `main` in too. Hive's push was refused, and Hive stopped a workspace whose request had
+merged 24 s before. It landed 13 s later, at its next read of the request. That is the fix plan
+[fix-request-merged-while-pushing](../plan/fix-request-merged-while-pushing.md), with its failing
+test.
+
+| Fix | On the real run | Evidence |
+|---|---|---|
+| [fix-issue-start-parts](../plan/fix-issue-start-parts.md) | **proven** | All 8 takes started on their first Start in Hive (200, 1.3–2.4 s), on the records as the classifier wrote them. Each of the 8 answers filled parts its kind does not have (13 in all: `known` 8 times, `outOfScope` 4 times, `reproduce` once). All 13 reached the writer's brief under Notes ("What is known: Expected: parse('1h 30m') returns 5400000…"). Every record is byte-identical from its classification to the end of the run |
+| [fix-writer-npm-update-check](../plan/fix-writer-npm-update-check.md) | **proven** | 8 writers ran `npm test` 20 times in a repository with a `package.json` and no lockfile. No tool result holds a `deny network-outbound` line, and no workspace stopped as `sandbox`. Each writer's settings had `npm_config_update_notifier=false` and allowed `registry.npmjs.org`. The first run's two writers had been stopped for 6.5 minutes |
+| [fix-issue-resumed-answer](../plan/fix-issue-resumed-answer.md) | **proven** | Issue 8, read on GitHub: "Symbiote stopped work on this: its pull request was closed without a merge." (16:22:38), `symbiote: stopped`. Then, after my message to the agent: "Symbiote's Hive is working on this again in `fix/8-dur-exits-0-when-an`." (16:23:09), with `symbiote: working` added and `symbiote: stopped` removed (16:23:10–11). It came 2.2 s after the message, on `rounds-again` with `after: stuck` |
+| [fix-classifier-own-answers](../plan/fix-classifier-own-answers.md) | **proven** | Every issue only Hive wrote to read unchanged: issues 4–7 (1 comment and `symbiote: declined` each), 1, 2 and 8 after "working" and the request (2 comments), and issue 8 after 5. Issue 3 changed by the person's answer only. Issue 1's hash, `1340e62c…`, was the same at its three classifications (16:17, 16:41, 16:45), with 0, 2 and 4 of Hive's comments on it. The snapshots read "Symbiote's own answers, left out: 2" (then 4) and "Labels: none". No reason of the four classifications after a revert and reopen quotes Hive's words: "A clear bug in src/ with an exact reproduction…" |
+| [fix-queue-landing-push](../plan/fix-queue-landing-push.md) | **proven** | Both queue entries: `state: landed`, `pushed: { ok: true, remote: 'origin' }`. `landed` carries the push's own millisecond (16:42:11.508 and 16:43:01.693). Each log has one "Land in main" step, one fast-forward and one `Pushed to origin`. Hive recorded `pushed: true` for both. `git ls-remote` gave `c6321ec`, the second merge. The Run tab says "Landed in main · pushed" (screenshots below) |
+
+**What Hive did with the conflicting request.** It ran twice:
+
+- **The first pass (#9 and #10): the person resolved both conflicts on GitHub**, though asked not
+  to. #10's resolution (16:36:15) came before Hive's poll reached it. #9's came 9 s after Hive's
+  own path had started:
+
+  | Time | Event |
+  |---|---|
+  | 16:36:28 | #10 merged; #9 now conflicts with `main` in `src/index.js` and `test/durations.test.js` |
+  | 16:36:52 | Hive reads #9 as not mergeable and sends its writer `hive.land` (sent 16:36:57.5) |
+  | 16:37:01 | The person resolves #9's conflict on GitHub ("Merge branch 'main' into…", by GitHub) |
+  | 16:37:14 | The person merges #9; GitHub closes issue 2 by its `Closes #2` |
+  | 16:37:21.7 | The writer commits its own merge of `main` (24 s); Hive checks it (0.21 s) and reviews it (14.7 s, $0.112, approved) |
+  | 16:37:38.5 | Hive's push of the branch: `! [rejected] … (fetch first)`. Hive stops the workspace: `stop: landing`. The issue is closed, so the stop is not written to it (`not-written`, `closed`) |
+  | 16:37:51.96 | Hive's request poll comes due: #9 merged; the workspace landed, the take judged right |
+
+- **The third pass (#15), left to Hive**: the person merged #14 only and did not touch #15 until
+  it was mergeable again:
+
+  | Time | Event |
+  |---|---|
+  | 17:01:14 | #14 (issue 2) merged; GitHub reads #15 `dirty` 6 s later |
+  | 17:02:19.0 | Hive reads #15 as not mergeable (its 60 s poll) and records the landing's outcome `conflict` |
+  | 17:02:23.8 | `hive.land` sent to the writer |
+  | 17:02:36.1 | The writer's merge of `main` committed: 12.3 s |
+  | 17:02:36.3 | The check passed (0.18 s); the review approved at 17:02:53.3 (17.0 s, $0.126) |
+  | 17:02:55.7 | The branch pushed; the same request updated, no second one |
+  | 17:03:00.6 | GitHub reads #15 `mergeable: true`, `clean` |
+  | 17:06:34 | The person merges #15; Hive lands it 49.6 s later (17:07:23.6) |
+
+  Issue 1 kept `symbiote: working` throughout, with no comment for the conflict: it is not an
+  issue's step. Hive's path for a request that cannot merge (HV8, decision 789) is now proven on
+  a real forge.
+
+**What ran.** This branch's build (`main` at `d531987`, with the five fixes), its own `symbiote
+view` on port 4813, and its own `SYMBIOTE_CACHE_DIR` (`~/.cache/symbiote-hv12-again`). The clone
+was in `/tmp/hv12-again/loc`, a new private repository `attomius321/symbiote-hv12-again`: the same
+seed, Actions off, no secrets, no webhooks. Claude Code 2.1.325; the classifier and the running
+reviewer on Opus at high. The writers ran on what the classifier chose: Sonnet 5.5 at medium for 7,
+and Haiku 5.5 at low for issue 3. `hive.budget` was $20; 4 issues were taken (1, 2, 3, 8), in 8
+workspaces.
+
+- **The person's steps**:
+  - 16:17: trusted the clone in Claude Code and turned Hive on.
+  - 16:21: answered issue 3 as its author, with the first run's words.
+  - 16:35:25–16:37:14: merged #13, #12, #10 and #9, and resolved #10's and #9's conflicts on
+    GitHub.
+  - 17:01:14: merged #14; 17:06:34: merged #15 once Hive had made it mergeable.
+- **What I did that a real run would not**:
+  - closed #11 without a merge, to make the stop fix 3 needs;
+  - sent issue 8's stopped agent a message: "Your pull request was closed by mistake. Nothing to
+    change: end your turn, and Hive opens a new one.";
+  - reverted the request merges and reopened issues 1 and 2 twice, for the queue pass and the
+    retry;
+  - set `hive.issues.lands` through Settings' own call (`POST /api/hive/landing/issues`).
+  - **Nothing by hand in any record.** As in the first run, Settings writes the tracked
+    `symbiote/config.json`, so the clone had it changed during the queue pass. The queue's
+    fast-forwards did not mind.
+
+### Timeline (UTC)
+
+| Time | Event |
+|---|---|
+| 16:14:13–19 | Issues 1–6 opened |
+| 16:17:34 | Hive on (the person); the clone already trusted |
+| 16:17:48–16:18:56 | Issues 1–6 classified, one at a time; Hive's answers on 3–6 within 1–3 s of each decision |
+| 16:19:04–16:19:31 | Issue 7 opened and refused; issue 8 opened and taken |
+| 16:19:38.8–16:19:47.8 | Start in Hive for issues 1, 2 and 8: 200 each, the records as written |
+| 16:20:19–16:20:34 | Pull requests #9 (issue 2), #10 (1), #11 (8) opened, 39–47 s after their starts; no writer stopped |
+| 16:21:29 | The person answered issue 3 |
+| 16:22:11–16:22:28 | Issue 3 classified again (taken: a refactor) and started |
+| 16:22:35 | I closed #11 without a merge |
+| 16:22:37.2 | Hive stopped issue 8's workspace (`request-closed`), 2 s after the close; "stopped" on the issue at 16:22:38 |
+| 16:23:06.8 | My message to issue 8's agent; "working on this again" at 16:23:09 |
+| 16:23:17.8, 16:23:24.1 | #12 (issue 8, the same commit, already reviewed) and #13 (issue 3) opened |
+| 16:35:25–16:37:14 | The person merged #13, #12, #10 and #9, resolving #10's and #9's conflicts on GitHub |
+| 16:35:42–16:37:52 | Hive saw each merge 5 to 38 s later and landed the four; #9's after the 13 s stop |
+| 16:40:45–48 | Merges of #10 and #9 reverted; issues 1 and 2 reopened; `hive.issues.lands` set to `queue` |
+| 16:40:59–16:41:28 | Issues 1 and 2 classified again (taken) and started |
+| 16:42:13.6 | Issue 2 landed through the queue, `pushed: true` |
+| 16:42:17.4 | Issue 1's queue landing conflicted with issue 2's; Hive sent the writer `hive.land` |
+| 16:43:03.2 | Issue 1 landed through the queue, `pushed: true` |
+| 16:45:32–40 | The retry: both queue merges reverted, issues 1 and 2 reopened, `hive.issues.lands` set back to `request` |
+| 16:45:49–16:46:49 | Issues 1 and 2 classified again, started, and #14 and #15 opened |
+| 17:01:14 | The person merged #14 |
+| 17:02:19–17:03:00 | Hive's own path for #15's conflict, to mergeable again |
+| 17:07:23.6 | #15 landed: the run's last landing |
+
+From Hive on to the second pass's last landing took 25 min 29 s (the first run: 22 min). The
+person's merges started 12 min after the requests were open (the first run: 1 to 3 min).
+
+### Each step's time and cost, against the first run
+
+| Step | First run | This run |
+|---|---|---|
+| Classifying the 8 issues | median 8.9 s, $0.031; $0.276 | median 9.8 s, $0.031; $0.284 |
+| A take's start | refused 6 of 6; started after a hand edit | 200 on 8 of 8, 1.3–2.4 s |
+| A writer's first turn | 18.9–28.4 s; 2 of 6 then stopped 6.5 min by the sandbox | 17.7–29.0 s; none stopped |
+| The check (`npm test`) | 0.14–0.22 s | 0.13–0.21 s |
+| A running review | 11.7–22.9 s, $0.097–0.155 | 12.8–17.4 s, $0.108–0.145 |
+| Start to request open | 41 s to 7 min (the stopped two) | 38–56 s |
+| A merge on GitHub seen by Hive | 38–56 s | 5–59 s (its 60 s poll) |
+| A queue entry, queued to landed and pushed | 4.3 s; recorded `pushed: false` | 4.6 s and 5.0 s (the push 2.6 s each); `pushed: true` |
+| A queue pass, start to landed | 40 s; 1 min 41 s with a conflict | 45 s; 1 min 36 s with a conflict |
+| An answer on the issue after its step | 1–3 s | 1–3 s |
+| A request that cannot merge, made mergeable by Hive | did not run | 41.6 s from Hive's read; 1 min 46 s from the merge that broke it |
+
+The writers' cost is at list price from their transcripts (Sonnet 5.5: $2 and $10 a million
+tokens, $0.10 to read the cache; Haiku 5.5: $0.10 and $0.50, its cache read taken as a tenth of
+its input). The reviews' and the classifier's costs are their records'.
+
+| Workspace | Landed through | Writer | Reviews | Total |
+|---|---|---|---|---|
+| issue 1 | request #10 | $0.161 | $0.108 | $0.270 |
+| issue 2 | request #9, after the conflict both resolved | $0.243 (2 turns) | $0.258 (2) | $0.501 |
+| issue 8 | request #12, after #11 closed | $0.198 (2 turns) | $0.118 | $0.317 |
+| issue 3 | request #13 | $0.011 (Haiku) | $0.119 | $0.130 |
+| issue 2 | the queue | $0.110 | $0.109 | $0.219 |
+| issue 1 | the queue, after a conflict | $0.165 (2 turns) | $0.268 (2) | $0.433 |
+| issue 2, the retry | request #14 | $0.105 | $0.109 | $0.215 |
+| issue 1, the retry | request #15, Hive's conflict path | $0.145 (2 turns) | $0.245 (2) | $0.389 |
+
+The classifier ran 13 times for $0.417: the 8 issues for $0.284, and 5 classified again for
+$0.132. In all: writers $1.139, reviews $1.334, classifier $0.417, **$2.89**. The two passes the
+first run also ran cost **$2.23** (the first run: $2.11). They cost more for two reasons: issue
+2's second turn and review merged a `main` the person had already merged ($0.112 of review), and
+issue 8 needed a second request. The retry cost $0.66. No workspace came near its $20 budget.
+
+### The issues on GitHub
+
+Read after the run (`gh api …/issues/<n>/comments` and `…/timeline`):
+
+| # | Hive's comments | Labels | Closed |
+|---|---|---|---|
+| 1 | 6: working; the request #10; working in `…-2`; "Landed in `main` at 7311a35."; working in `…-3`; the request #15 | `symbiote: working` set at each start, removed at each landing (3 times) | 3 times, each by the forge: #10, the queue's merge `c6321ec`, #15 |
+| 2 | 6, the same steps (#9, "Landed in `main` at 71ead23.", #14) | the same; the 13 s stop wrote nothing (closed) | #9, `842c371`, #14 |
+| 3 | 3: the question; working; the request #13 (and the person's answer) | question → working → removed | by #13 |
+| 4–7 | 1 each: "Symbiote will not work on this: …" | `symbiote: declined` | left open |
+| 8 | 5: working; the request #11; stopped; working again; the request #12 | working → stopped → working → removed | by #12 |
+
+Issues 1 and 2 reached decision 1022's 6 comments exactly: a landing by request writes none.
+Every "Landed in `main` at …" names the workspace's last commit, not the merge, as in the first run.
+
+### The classifier
+
+All 8 as expected, as in the first run: 1, 2 and 8 taken as fixes and a feature; 3 asked, then
+taken after the author's answer; 4 `not-a-change`; 5 `too-large`; 6 and 7 `unsafe`, by Symbiote's
+rules (6: `secrets`, `outside-actions`, `agent-instructions`, the snapshot's `hidden-text`; 7:
+`secrets`, `outside-actions`). Issue 8: "The "ignore previous errors" line is part of dur's own
+output in the quoted log. It is not an instruction." This time, issue 3's take chose Haiku 5.5 at
+low (the first run: Sonnet at medium); its writer cost $0.011.
+
+### What the writers reached
+
+8 writers: Bash only (4 to 11 calls), with 2 Edit calls from issue 3's Haiku writer. No refused
+host. No commit of the 25 on the scratch repository's 9 branches holds a token-shaped string
+(`gh?_`, `sk-ant-`, `glpat-`, AWS keys, private keys).
+
+### The usage pause
+
+None came on its own: the 5-hour window read 28 to 34 % and the week 44 %. It was not forced this
+time.
+
+### Also seen, no fix planned
+
+- **The Run tab of a restarted workspace still draws one round.** Issue 8's shows "Not landed:
+  Closed on GitHub without a merge", but neither the stop nor the message (as in the first run).
+- **The Run tab's writer time counts the wait.** Issue 1's retry reads "Writer … 16:27" and "Round
+  1 18:46 – 19:02" (local time): the writer's two turns took 19.5 s and 12.3 s. The rest was the
+  wait for the person's merge.
+- **The queue landing's Run tab lists `main`'s merge among the writer's commits.** "842c371 Merge
+  feature/2-support-days-d-in-parse-2…" is the other workspace's landing, brought in by the
+  writer's merge of `main`.
+- **#12 reused #11's commit**: Hive opened the new request on the same commit, already checked and
+  reviewed (`landing`, `reviewed: 1`). No second review was paid for.
+
+### Screenshots
+
+At 1440 × 1000, 1x. The Run tab of issue 1's queue landing: the conflict with `main`, the writer's
+merge, landed and pushed:
+
+![Run tab, queue landing, dark](../images/hv12-issue-loop-real-run/again-run-fix-1-queue-dark.webp)
+![Run tab, queue landing, light](../images/hv12-issue-loop-real-run/again-run-fix-1-queue-light.webp)
+
+The Run tab of issue 1's retry: #15 could not merge on GitHub, Hive's writer merged `main` in, and
+the person merged it:
+
+![Run tab, a request that could not merge, dark](../images/hv12-issue-loop-real-run/again-run-fix-1-request-conflict-dark.webp)
+![Run tab, a request that could not merge, light](../images/hv12-issue-loop-real-run/again-run-fix-1-request-conflict-light.webp)
+
+**Learned**
+
+- **A person on the forge is a second writer.** Asked not to, the person still resolved both
+  conflicts on GitHub, in 9 to 50 s. Hive's path and the person's ran at once, and Hive's push
+  lost.
+- **A refused push is news about the forge.** Hive reads the request only on its 60 s poll; a
+  push refused as "fetch first" says the branch moved there, and the request may have merged.
+- **The fix plans' tests found the run's order.** The red test passed on `main` until the merge on
+  the forge came after Hive had taken the writer's turn end, as in the run.
+
+**Verification**
+
+- The records: the scratch clone's `symbiote/issues/`, `symbiote/hive/` and `symbiote/workspaces/`,
+  the queue's entries and logs in the cache, and the writers' transcripts. GitHub's issues,
+  requests, commits and branches, read with `gh api`. The scripts are in
+  `spikes/hv12-issue-loop-real-run/scripts` (`timings.mjs`, `shots-again.mjs` added; the others
+  take `HV12_PORT`, `HV12_CACHE`, `HV12_CLONE`, `HV12_REPO`).
+- The fix plan's test was run red on this branch on both fake forges, then taken out again
+  (`spikes/hv12-issue-loop-real-run/red-tests/fix7-test.ts`).
+- Decision 1092 and the fix's name were checked free on `main` and every branch, local and
+  `origin` (81 refs).
+- `pnpm check` passed: 278 test files, 3,890 tests. The branch changes docs, images and `spikes/`
+  only.
+
+**Not verified**:
+
+- A usage pause that comes on its own.
+- Claude Code's trust left unsaid: the person trusted the clone first.
+- Issue 7 started: the classifier refused it again.
+- GitLab: HV12b.

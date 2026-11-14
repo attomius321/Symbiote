@@ -7,7 +7,10 @@
 `a47dda3`). It needs [HV11](hv11-issue-answered.md), and with it [HV9](hv9-issue-classifier.md)
 and [HV10](hv10-workspace-from-issue.md). The GitHub half ran on 2026-11-14 on
 `spike/hv12-issue-loop-real-run` (from `main` at `53c6349`), ready for review: five steps failed,
-each now a fix plan with its failing test (As built, below). The GitLab half is
+each now a fix plan with its failing test (As built, below). The five fixes merged, and the
+GitHub half ran again on 2026-11-14 on `spike/hv12-real-run-again` (from `main` at `d531987`),
+ready for review: all five held, Hive's own path for a request that cannot merge ran, and one
+step failed, a fix plan with its failing test (the run again, below). The GitLab half is
 [HV12b](https://github.com/attomius321/Symbiote/issues/3) (decision 1079).
 
 **Problem**. Most of Hive's loop has run for real, in this repository and in scratch ones. The
@@ -154,3 +157,40 @@ steps they touch.
 | # | Question | Decision | Why |
 |---|---|---|---|
 | 1079 | Where does HV12 run now? (amends 1024, 1025) | **On GitHub only: the 8 issues on one private scratch repository; issues 1 and 2 land through a request, then, reverted and reopened, through the queue. The GitLab half, four issues and the swap, is HV12b ([issue #3](https://github.com/attomius321/Symbiote/issues/3))** | The person's choice; GitLab needs an account, a token and a project the person sets up later |
+
+## As built: the run again (2026-11-14)
+
+The same 8 issues, seed and order on a new private repository (`attomius321/symbiote-hv12-again`),
+with this branch's build, after the five fixes merged. What differs from the first run:
+
+- **No record edited by hand.** Every take started from Start in Hive's own call on the record as
+  the classifier wrote it.
+- **One stop made on purpose**, for the third fix: I closed issue 8's first request without a
+  merge, and sent its stopped agent a message.
+- **A third pass** of issues 1 and 2 through requests. In the first pass the person resolved both
+  conflicts on GitHub, though asked not to. The third pass left #15's conflict to Hive.
+- **No forced usage pause** and no widened sandbox; the person did not need Settings.
+
+## Results: the run again (2026-11-14)
+
+8 of 8 decisions as expected. 8 landings: 6 through requests the person merged and 2 through the
+queue, which recorded `pushed: true`. The second pass's last landing came 25 min 29 s after Hive
+was turned on (the first run: 22 min). The run cost $2.89: $2.23 for the two passes the first run
+also ran (it cost $2.11), and $0.66 for the third. The journal has the timeline, each step against
+the first run, and screenshots.
+
+| Fix or step | Result |
+|---|---|
+| [fix-issue-start-parts](fix-issue-start-parts.md) | proven: 8 of 8 takes started; their 13 parts of other kinds in Notes |
+| [fix-writer-npm-update-check](fix-writer-npm-update-check.md) | proven: 8 writers, 20 `npm test` runs, no refused host, no stop |
+| [fix-issue-resumed-answer](fix-issue-resumed-answer.md) | proven: "working on this again" and `symbiote: working` on issue 8, 2.2 s after the message |
+| [fix-classifier-own-answers](fix-classifier-own-answers.md) | proven: every issue only Hive wrote to read unchanged; no reason quotes Hive |
+| [fix-queue-landing-push](fix-queue-landing-push.md) | proven: 2 of 2 `pushed: true`, one "Land in" step each |
+| Landing through a request that cannot merge | proven on the third pass: mergeable again 41.6 s after Hive read the conflict |
+| A request merged while Hive pushes | failed: Hive stopped a workspace whose request had merged, for 13 s: [fix-request-merged-while-pushing](fix-request-merged-while-pushing.md) |
+| The usage pause | none came on its own (the 5-hour window at 28–34 %) |
+| Claude Code's trust | not run: trusted first |
+
+Decision 1026 stands: HV13 waits for the new fix to merge. A usage pause that comes on its own and
+Claude Code's trust left unsaid are still unproven on a real forge.
+

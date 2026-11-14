@@ -1,9 +1,11 @@
 // Each writer's transcript: its turns' times, tools, refused hosts, and its cost at list prices.
 import { readFileSync, readdirSync } from 'node:fs';
 const base = process.env.HOME + '/.claude/projects/';
+const prefix = `${(process.env.HV12_CLONE ?? '/tmp/hv12-real/loc').replace(/[/.]/g, '-')}-worktrees-`;
 const PRICE = { // $ per million tokens (claude-api skill, 2026-11-03): input, output, cache read
-  sonnet: [2, 10, 0.1], opus: [4, 20, 0.2] };
-for (const dir of readdirSync(base).filter((d) => d.startsWith('-tmp-hv12-real-loc-worktrees-'))) {
+  // (Haiku 5.5's cache read is not listed: a tenth of its input, as for the others' list prices)
+  sonnet: [2, 10, 0.1], opus: [4, 20, 0.2], haiku: [0.1, 0.5, 0.01] };
+for (const dir of readdirSync(base).filter((d) => d.startsWith(prefix))) {
   for (const f of readdirSync(base + dir).filter((x) => x.endsWith('.jsonl'))) {
     const lines = readFileSync(base + dir + '/' + f, 'utf8').split('\n').filter(Boolean).map((l) => { try { return JSON.parse(l); } catch { return null; } }).filter(Boolean);
     const seen = new Set(); let cost = 0; const tools = new Map(); const refused = []; const prompts = []; let model = '';
@@ -26,6 +28,6 @@ for (const dir of readdirSync(base).filter((d) => d.startsWith('-tmp-hv12-real-l
       }
     }
     const ts = lines.map((j) => j.timestamp).filter(Boolean).sort();
-    console.log(JSON.stringify({ writer: dir.replace('-tmp-hv12-real-loc-worktrees-', ''), model, first: ts[0], last: ts.at(-1), prompts: prompts.length, tools: Object.fromEntries(tools), refused, cost: Math.round(cost * 10000) / 10000, types: [...types] }));
+    console.log(JSON.stringify({ writer: dir.replace(prefix, ''), model, first: ts[0], last: ts.at(-1), prompts: prompts.length, tools: Object.fromEntries(tools), refused, cost: Math.round(cost * 10000) / 10000, types: [...types] }));
   }
 }
