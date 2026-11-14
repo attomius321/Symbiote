@@ -486,3 +486,4 @@ merge commit.
 - 2026-11-14 [HV11a, HV11b — the forge writes to issues; Hive answers each step, within limits](journal/hv11-issue-answered.md)
 - 2026-11-14 [Fix — no agent lists your other sessions or runs your routines: `ListAgents` and `RemoteTrigger` denied](journal/fix-agents-no-session-messages.md)
 - 2026-11-14 [HV12 — a real run on GitHub: 8 issues decided as expected, 6 landings by request and queue, issues answered; five fixes planned](journal/hv12-issue-loop-real-run.md)
+- 2026-11-14 [Fix — the classifier reads no answer of Symbiote's own: its comments and labels left out](journal/fix-classifier-own-answers.md)

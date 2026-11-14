@@ -176,7 +176,7 @@ describe('the classifier in symbiote view (HV9b)', () => {
     };
     await serve((path) =>
       path === '/repos/acme/app/issues/3'
-        ? { body: { ...ISSUE, comments: 1 } }
+        ? { body: { ...ISSUE, comments: 1, labels: [{ name: 'symbiote: question' }] } }
         : path === '/repos/acme/app/issues/3/comments'
           ? { body: [answer] }
           : undefined,
@@ -193,9 +193,15 @@ describe('the classifier in symbiote view (HV9b)', () => {
       join(repo.root, 'symbiote', 'issues', '3.jsonl'),
       `${JSON.stringify(answered)}\n`,
     );
+    const labelled = { event: 'labelled', at: answered.at, key: 'k', add: ['symbiote: question'] };
+    appendFileSync(
+      join(repo.root, 'symbiote', 'issues', '3.jsonl'),
+      `${JSON.stringify({ ...labelled, remove: [] })}\n`,
+    );
     const { service, runs } = await classifier(repo);
     const record = await service.classify(3);
     expect(runs[0]).not.toContain('A pull request is open');
+    expect(runs[0]).toContain('Labels: none\n');
     expect(runs[0]).toContain("Symbiote's own answers, left out: 1");
     expect(record.snapshot.read).toEqual({ members: 0, author: 0 });
   });

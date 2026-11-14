@@ -367,6 +367,24 @@ describe("Symbiote's own answers on the issue (HV12)", () => {
     expect(after.hash).not.toBe(issueSnapshot(issue, AT).hash);
   });
 
+  it('leave out the labels Symbiote set, by the name its labelled events give; the person’s are read', () => {
+    const issue = viteIssue();
+    const before = issueSnapshot(issue, AT);
+    const labelled = { ...issue, labels: [...issue.labels, { name: 'Symbiote: Working' }] };
+    const after = issueSnapshot(labelled, AT, { ownLabels: ['symbiote: working'] });
+    expect(after.text).toContain('Labels: pending triage\n');
+    expect(after.hash).toBe(before.hash);
+    // Only Symbiote's: an issue with nothing but its label reads "none".
+    const only = { ...issue, labels: [{ name: 'symbiote: declined' }] };
+    expect(issueSnapshot(only, AT, { ownLabels: ['symbiote: declined'] }).text).toContain(
+      'Labels: none\n',
+    );
+    const person = { ...labelled, labels: [...labelled.labels, { name: 'p3-minor-bug' }] };
+    expect(issueSnapshot(person, AT, { ownLabels: ['symbiote: working'] }).hash).not.toBe(
+      before.hash,
+    );
+  });
+
   it('knows a GitLab note by its anchor, whatever host or path spelling the answer recorded', () => {
     const issue = runnerIssue();
     const note: IssueComment = {

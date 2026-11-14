@@ -94,7 +94,7 @@ describe('the Issues page’s service (IS1)', () => {
     expect(one.snapshot).toBe(issueSnapshot(one.issue!, '2026-11-14T00:00:00.000Z').hash);
   });
 
-  it("hashes the issue without Symbiote's own answers on it (HV12)", async () => {
+  it("hashes the issue without Symbiote's own answers on it, comments and labels (HV12)", async () => {
     const ANSWER = {
       user: { login: 'ada', type: 'User' },
       author_association: 'OWNER',
@@ -104,7 +104,7 @@ describe('the Issues page’s service (IS1)', () => {
     };
     await serve((path) =>
       path === '/repos/acme/app/issues/3'
-        ? { body: { ...ISSUE, comments: 1 } }
+        ? { body: { ...ISSUE, comments: 1, labels: [{ name: 'symbiote: working' }] } }
         : path === '/repos/acme/app/issues/3/comments'
           ? { body: [ANSWER] }
           : undefined,
@@ -113,12 +113,12 @@ describe('the Issues page’s service (IS1)', () => {
     const asked: number[] = [];
     const own = (number: number) => {
       asked.push(number);
-      return Promise.resolve([ANSWER.html_url]);
+      return Promise.resolve({ own: [ANSWER.html_url], ownLabels: ['symbiote: working'] });
     };
     const one = await issuesService(repo, {}, make(true), own).one(3);
     expect(asked).toEqual([3]);
     expect(one.issue?.thread).toHaveLength(1);
-    const without = { ...one.issue!, comments: 0, thread: [] };
+    const without = { ...one.issue!, comments: 0, thread: [], labels: [] };
     expect(one.snapshot).toBe(issueSnapshot(without, '2026-11-14T00:00:00.000Z').hash);
   });
 

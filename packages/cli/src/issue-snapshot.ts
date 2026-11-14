@@ -1,8 +1,8 @@
 // The issue as the classifier reads it (HV9b, decision 1001): its title, its author's role, its
 // labels, its body and the comments of the project's members and of its author (1043, 1044),
 // cleaned as the Issues page cleans them (IS1, decision 949), at most 20,000 characters, hashed.
-// Symbiote's own answers on the issue (HV11's comments, by the person's account) are left out of
-// the text and the hash, and counted (decision 1086).
+// Symbiote's own answers on the issue (HV11's comments, by the person's account, and its labels)
+// are left out of the text and the hash; its comments are counted (decisions 1086, 1087).
 // Anyone can write an issue: Symbiote's own message tags are removed from it, and what the forge
 // would not show (HTML comments, scripts, zero-width and bidirectional characters) is dropped
 // and flagged.
@@ -132,14 +132,22 @@ function commentKey(url: string): string {
 /** Article and role: "an owner", "a member". */
 const withArticle = (role: string) => `${/^[aeiou]/i.test(role) ? 'an' : 'a'} ${role}`;
 
+/** What of an issue is Symbiote's own answer (HV11), from its events: never read (1086, 1087). */
+export interface OwnAnswers {
+  /** The addresses of its comments: the `answered` events' URLs. */
+  own?: readonly string[];
+  /** The names of its labels: the ones the `labelled` events added. */
+  ownLabels?: readonly string[];
+}
+
 /**
- * The snapshot of `issue` taken at `at`. `own`: the addresses of Symbiote's own answers on it
- * (its `answered` events, HV11), left out of the text and the hash, counted on a line of their own.
+ * The snapshot of `issue` taken at `at`. Symbiote's own answers on it are left out of the text
+ * and the hash: its comments counted on a line of their own, its labels not in Labels.
  */
 export function issueSnapshot(
   issue: Issue,
   at: string,
-  { own = [] }: { own?: readonly string[] } = {},
+  { own = [], ownLabels = [] }: OwnAnswers = {},
 ): IssueSnapshot {
   let hidden = false;
   const clean = (markdown: string) => {
@@ -151,6 +159,9 @@ export function issueSnapshot(
   const isOurs = (comment: IssueComment) =>
     comment.url !== undefined && ours.has(commentKey(comment.url));
   const answers = issue.thread.filter(isOurs).length;
+  // A label's name on GitHub and GitLab is one whatever its case.
+  const ourLabels = new Set(ownLabels.map((name) => name.toLowerCase()));
+  const labels = issue.labels.filter((l) => !ourLabels.has(l.name.toLowerCase()));
   const comments = issue.thread
     .filter((comment) => !isOurs(comment))
     .map((comment) => ({ comment, by: commenter(issue, comment) }))
@@ -160,7 +171,7 @@ export function issueSnapshot(
   const lines = [
     `Title: ${clean(issue.title)}`,
     `Author's role: ${role}`,
-    `Labels: ${issue.labels.length > 0 ? issue.labels.map((l) => clean(l.name)).join(', ') : 'none'}`,
+    `Labels: ${labels.length > 0 ? labels.map((l) => clean(l.name)).join(', ') : 'none'}`,
     `Opened: ${issue.created}; last updated: ${issue.updated}`,
     `Comments by people outside the project, left out: ${outside}${issue.commentsNeedToken ? ' (comments need a token: none read)' : ''}`,
     // Only when there are some: an issue Symbiote never answered reads as it did before HV12.
@@ -183,7 +194,7 @@ export function issueSnapshot(
   const read = {
     title: issue.title,
     body: issue.body,
-    labels: issue.labels.map((l) => l.name).sort(),
+    labels: labels.map((l) => l.name).sort(),
     role: issue.author.role ?? null,
     comments: comments.map(({ comment }) => [comment.author.login, comment.created, comment.body]),
   };

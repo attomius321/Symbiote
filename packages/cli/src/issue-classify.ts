@@ -23,7 +23,7 @@ import {
   type IssueSnapshotFlag,
   type WorkKind,
 } from '@symbiote/core';
-import { issueSnapshot, withoutOwnTags } from './issue-snapshot.js';
+import { issueSnapshot, withoutOwnTags, type OwnAnswers } from './issue-snapshot.js';
 import { runWithInput, type RunWithInput } from './programs.js';
 import { claudeAdviceArgs } from './workspace-advice.js';
 import { BRIEF_PARTS, KINDS, MAX_BRIEF, MAX_TITLE, briefOf } from './workspace-brief.js';
@@ -327,7 +327,7 @@ export async function classifyIssue({
   version,
   cacheDir,
   markers,
-  own = [],
+  own = {},
   runInput = runWithInput,
   now = Date.now,
   timeoutMs = CLASSIFIER_TIMEOUT_MS,
@@ -344,14 +344,14 @@ export async function classifyIssue({
   version?: string | undefined;
   cacheDir: string;
   markers: readonly PersonalMarker[];
-  /** The addresses of Symbiote's own answers on the issue: never read (decision 1086). */
-  own?: readonly string[];
+  /** Symbiote's own answers on the issue, its comments and labels: never read (1086, 1087). */
+  own?: OwnAnswers;
   runInput?: RunWithInput;
   now?: () => number;
   timeoutMs?: number;
 }): Promise<IssueClassification> {
   const at = new Date(now()).toISOString();
-  const snapshot = issueSnapshot(issue, at, { own });
+  const snapshot = issueSnapshot(issue, at, own);
   const on = classifierOn(models, config);
   const schema = classifierSchema(models);
   const input = classifierMessage(card, snapshot);

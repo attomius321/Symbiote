@@ -11,7 +11,7 @@ import {
 } from '@symbiote/core';
 import type { Env, Forge } from '@symbiote/forge';
 import { originForge } from './hive-request.js';
-import { issueSnapshot } from './issue-snapshot.js';
+import { issueSnapshot, type OwnAnswers } from './issue-snapshot.js';
 
 export interface IssuesService {
   list(query: IssueQuery): Promise<IssueListAnswer>;
@@ -27,14 +27,14 @@ const FOUND_MS = 30_000;
 type Found = Awaited<ReturnType<typeof originForge>>;
 
 /**
- * The issues of the forge `repo`'s origin names, with the token `env` gives or none. `own`: the
- * addresses of Symbiote's own answers on an issue, left out of its snapshot's hash (1086).
+ * The issues of the forge `repo`'s origin names, with the token `env` gives or none. `own`:
+ * Symbiote's own answers on an issue, left out of its snapshot's hash (1086, 1087).
  */
 export function issuesService(
   repo: GitRepo,
   env: Env,
   make?: (url: string, env: Env) => Forge,
-  own?: (number: number) => Promise<readonly string[]>,
+  own?: (number: number) => Promise<OwnAnswers>,
 ): IssuesService {
   let found: { at: number; value: Promise<Found> } | undefined;
   const origin = () => {
@@ -82,7 +82,7 @@ export function issuesService(
         const [issue, answers] = await Promise.all([forge.getIssue(number), own?.(number)]);
         // The hash the classifier's snapshot would have now (HV9c, decision 1057): the page sees
         // an edit since a classification with no read of the forge more.
-        const snapshot = issueSnapshot(issue, new Date().toISOString(), { own: answers ?? [] });
+        const snapshot = issueSnapshot(issue, new Date().toISOString(), answers);
         return { issue, snapshot: snapshot.hash };
       }),
   };
