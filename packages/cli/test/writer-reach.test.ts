@@ -10,6 +10,7 @@ import {
   SANDBOX_PLACEHOLDERS,
   ecosystemsAt,
   excludePlaceholders,
+  hiveSandboxService,
   issueWriterSettings,
   prepareWriter,
   readSandboxDomains,
@@ -96,6 +97,36 @@ describe("the hosts a writer's installs need (decision 1052)", () => {
   });
 });
 
+describe("npm's own update check (HV12)", () => {
+  it('a package.json alone names npm', () => {
+    expect(ecosystemsAt(['package.json']).map((e) => e.name)).toEqual(['npm']);
+  });
+
+  it("turns npm's and pnpm's update check off in the writer's env", () => {
+    const { env } = JSON.parse(
+      issueWriterSettings({
+        hooks: HOOKS,
+        folder: writerFolder('/c/symbiote', '/w/fix-1'),
+        cacheDir: '/c/symbiote',
+        hosts: [],
+        secrets: [],
+        protect: [],
+      }),
+    ) as { env: Record<string, string> };
+    expect(env.npm_config_update_notifier).toBe('false');
+  });
+
+  it("Settings' writer network shows npm for a repository with a package.json and no lockfile", async () => {
+    const root = tempDir();
+    writeFileSync(join(root, 'package.json'), '{"scripts":{"test":"node test.js"}}\n');
+    const read = await hiveSandboxService(root).read();
+    expect(read.ecosystems).toEqual([
+      { name: 'npm', files: ['package.json'], hosts: ['registry.npmjs.org'] },
+    ]);
+    expect(read.hosts).toEqual(['registry.npmjs.org']);
+  });
+});
+
 describe("an issue writer's settings (decisions 1050–1054, 1063)", () => {
   const cacheDir = '/c/symbiote';
   const folder = writerFolder(cacheDir, '/w/fix-12');
@@ -121,12 +152,13 @@ describe("an issue writer's settings (decisions 1050–1054, 1063)", () => {
     expect(settings().hooks).toEqual(HOOKS.hooks);
   });
 
-  it('sets the variables in env: an empty gh folder, every install cache in one folder; never TMPDIR', () => {
+  it("sets the variables in env: an empty gh folder, every install cache in one folder, npm's update check off; never TMPDIR", () => {
     const cache = join(folder, 'cache');
     expect(settings().env).toEqual({
       GH_CONFIG_DIR: join(folder, 'gh'),
       npm_config_cache: join(cache, 'npm'),
       npm_config_store_dir: join(cache, 'pnpm'),
+      npm_config_update_notifier: 'false',
       YARN_CACHE_FOLDER: join(cache, 'yarn'),
       BUN_INSTALL_CACHE_DIR: join(cache, 'bun'),
       PIP_CACHE_DIR: join(cache, 'pip'),
