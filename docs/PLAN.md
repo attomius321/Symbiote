@@ -281,7 +281,7 @@ What holds now: [Reviews](area/reviews.md) · its decisions: [the register](deci
 | [Fix](plan/fix-issue-start-parts.md) | A take whose answer fills other kinds' parts starts: only its kind's parts reach the start, the others' text kept in Notes (HV12: 6 of 6 real takes refused) | built, ready for review | 1080 | [journal](journal/fix-issue-start-parts.md) |
 | [Fix](plan/fix-writer-npm-update-check.md) | npm's own update check does not stop an issue's writer: `npm_config_update_notifier=false` in its env; a root `package.json` names npm (HV12: two writers stopped after passing tests) | planned | | |
 | [Fix](plan/fix-issue-resumed-answer.md) | A stopped workspace that goes on says so on its issue: "working on this again" and `symbiote: working` (HV12: "stopped" for 6 to 7 minutes of work) | built, ready for review | 1084 | [journal](journal/fix-issue-resumed-answer.md) |
-| [Fix](plan/fix-classifier-own-answers.md) | The classifier reads no answer of Symbiote's own: Hive's comments left out of the snapshot and its hash; "an owner" (HV12: a stale "PR #9 is open" as a reason) | planned | | |
+| [Fix](plan/fix-classifier-own-answers.md) | The classifier reads no answer of Symbiote's own: Hive's comments and labels left out of the snapshot and its hash; "an owner" (HV12: a stale "PR #9 is open" as a reason) | built, ready for review | 1086, 1087 | [journal](journal/fix-classifier-own-answers.md) |
 | [Fix](plan/fix-queue-landing-push.md) | A queue landing's push is recorded as it went: `landed` with its push answered; Hive never lands the queue's own `ready` (HV12: 2 of 2 `pushed: false` for pushes that went; one landing pushed twice) | built, ready for review | 1088–1089 | [journal](journal/fix-queue-landing-push.md) |
 
 ### The merger

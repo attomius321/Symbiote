@@ -166,6 +166,46 @@ describe('the classifier in symbiote view (HV9b)', () => {
     ).toBe(JSON.stringify({ number: 3, key: `asked:${record.snapshot.hash}`, at: events[1]!.at }));
   });
 
+  it("reads no answer of Symbiote's own: an answered comment is left out (HV12)", async () => {
+    const answer = {
+      user: { login: 'ada', type: 'User' },
+      author_association: 'OWNER',
+      body: 'A pull request is open: https://github.com/acme/app/pull/9.',
+      created_at: '2026-11-03T10:00:00Z',
+      html_url: 'https://github.com/acme/app/issues/3#issuecomment-41',
+    };
+    await serve((path) =>
+      path === '/repos/acme/app/issues/3'
+        ? { body: { ...ISSUE, comments: 1, labels: [{ name: 'symbiote: question' }] } }
+        : path === '/repos/acme/app/issues/3/comments'
+          ? { body: [answer] }
+          : undefined,
+    );
+    const repo = repository(ABOUT);
+    mkdirSync(join(repo.root, 'symbiote', 'issues'), { recursive: true });
+    const answered = {
+      event: 'answered',
+      at: '2026-11-03T10:00:00Z',
+      key: 'k',
+      url: answer.html_url,
+    };
+    appendFileSync(
+      join(repo.root, 'symbiote', 'issues', '3.jsonl'),
+      `${JSON.stringify(answered)}\n`,
+    );
+    const labelled = { event: 'labelled', at: answered.at, key: 'k', add: ['symbiote: question'] };
+    appendFileSync(
+      join(repo.root, 'symbiote', 'issues', '3.jsonl'),
+      `${JSON.stringify({ ...labelled, remove: [] })}\n`,
+    );
+    const { service, runs } = await classifier(repo);
+    const record = await service.classify(3);
+    expect(runs[0]).not.toContain('A pull request is open');
+    expect(runs[0]).toContain('Labels: none\n');
+    expect(runs[0]).toContain("Symbiote's own answers, left out: 1");
+    expect(record.snapshot.read).toEqual({ members: 0, author: 0 });
+  });
+
   it('records a failed classification as an event, and as the record', async () => {
     await serve((path) => (path === '/repos/acme/app/issues/3' ? { body: ISSUE } : undefined));
     const repo = repository(ABOUT);

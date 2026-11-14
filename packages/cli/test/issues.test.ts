@@ -94,6 +94,34 @@ describe('the Issues page’s service (IS1)', () => {
     expect(one.snapshot).toBe(issueSnapshot(one.issue!, '2026-11-14T00:00:00.000Z').hash);
   });
 
+  it("hashes the issue without Symbiote's own answers on it, comments and labels (HV12)", async () => {
+    const ANSWER = {
+      user: { login: 'ada', type: 'User' },
+      author_association: 'OWNER',
+      body: 'Working on this.',
+      created_at: '2026-11-03T10:00:00Z',
+      html_url: 'https://github.com/acme/app/issues/3#issuecomment-41',
+    };
+    await serve((path) =>
+      path === '/repos/acme/app/issues/3'
+        ? { body: { ...ISSUE, comments: 1, labels: [{ name: 'symbiote: working' }] } }
+        : path === '/repos/acme/app/issues/3/comments'
+          ? { body: [ANSWER] }
+          : undefined,
+    );
+    const repo = await openRepo(repository('git@github.com:acme/app.git').root);
+    const asked: number[] = [];
+    const own = (number: number) => {
+      asked.push(number);
+      return Promise.resolve({ own: [ANSWER.html_url], ownLabels: ['symbiote: working'] });
+    };
+    const one = await issuesService(repo, {}, make(true), own).one(3);
+    expect(asked).toEqual([3]);
+    expect(one.issue?.thread).toHaveLength(1);
+    const without = { ...one.issue!, comments: 0, thread: [], labels: [] };
+    expect(one.snapshot).toBe(issueSnapshot(without, '2026-11-14T00:00:00.000Z').hash);
+  });
+
   it('reads public issues without a token, and says what to set', async () => {
     await serve((path) => (path === '/repos/acme/app/issues' ? { body: [ISSUE] } : undefined));
     const repo = await openRepo(repository('https://github.com/acme/app.git').root);

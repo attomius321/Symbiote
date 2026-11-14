@@ -227,6 +227,25 @@ export async function readIssueEvents(folder: string, number: number): Promise<I
 }
 
 /**
+ * Symbiote's own answers on issue `number` (HV11), from its events: the `answered` comments'
+ * addresses and the labels `labelled` added (decisions 1086, 1087).
+ */
+export async function ownAnswers(
+  folder: string,
+  number: number,
+): Promise<{ own: string[]; ownLabels: string[] }> {
+  const own: string[] = [];
+  const ownLabels = new Set<string>();
+  for (const event of await readIssueEvents(folder, number)) {
+    if (event.event === 'answered' && typeof event.url === 'string') own.push(event.url);
+    if (event.event === 'labelled' && Array.isArray(event.add)) {
+      for (const name of event.add) if (typeof name === 'string') ownLabels.add(name);
+    }
+  }
+  return { own, ownLabels: [...ownLabels] };
+}
+
+/**
  * Judges the take behind `branch`'s workspace (HV10, decision 1066): under the identity its
  * `started` event recorded, once per workspace; nothing for a workspace no start recorded.
  */

@@ -489,3 +489,4 @@ merge commit.
 - 2026-11-14 [Fix — a take whose answer fills other kinds' parts starts: those parts in Notes under their headings](journal/fix-issue-start-parts.md)
 - 2026-11-14 [Fix — a stopped workspace that goes on says so on its issue: "working on this again", `symbiote: working`](journal/fix-issue-resumed-answer.md)
 - 2026-11-14 [Fix — a queue landing's push is recorded as it went: `landed` with its push answered, landed once](journal/fix-queue-landing-push.md)
+- 2026-11-14 [Fix — the classifier reads no answer of Symbiote's own: its comments and labels left out](journal/fix-classifier-own-answers.md)

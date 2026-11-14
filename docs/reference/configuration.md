@@ -494,7 +494,9 @@ it records a decision and starts nothing. `POST /api/issues/<number>/classify` i
 
 - **What it reads**: the issue's title, author's role, labels, body, and the comments of the
   project's members and of the issue's author. On GitLab, a member has the Developer role or
-  above, and comments are read only with a token. Other comments are counted, not read. The text
+  above, and comments are read only with a token. Other comments are counted, not read, and so
+  are Symbiote's own answers on the issue: the comments its `answered` events record. The labels
+  its `labelled` events added are not read either. The text
   is cleaned as the Issues page cleans it. Text the forge hides (HTML comments, zero-width and
   bidirectional characters) is dropped and flagged, and the text is cut at 20,000 characters.
 - **The project's card**: `origin`'s project, the kinds of work, the check's commands and
@@ -520,7 +522,8 @@ brief, the time and the cost, and the classifier's identity: Claude Code's versi
 effort, and hashes of the prompt and of the card. A record of another `origin` is never read.
 
 **When to classify again.** The Issues page offers **Classify again** when the issue changed since
-its snapshot (its title, body, labels, author's role or the comments it read), when the classifier
+its snapshot (its title, body, labels, author's role or the comments it read; Symbiote's own
+comments and labels are not a change), when the classifier
 changed (its prompt, model, effort, the project's text or check, or Symbiote's rules), or when the last
 classification failed. With Hive off, the page shows past decisions and offers neither.
 
