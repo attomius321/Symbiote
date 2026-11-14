@@ -49,5 +49,7 @@ compared by recording each before and after. On HV12's real issues, read only:
 | 1–3 | changed | changed, once (their records held Hive's answers) |
 
 Leaving out only the answers made after each classification, issues 1 and 2 match their records.
-Issue 3 matches once Hive's removed `symbiote: question` is added back. `pnpm check`, `pnpm build`
-and `issues-classify.spec.ts` pass (numbers in the commit).
+Issue 3 matches once Hive's removed `symbiote: question` is added back. `pnpm check`: 3,876 tests
+in 278 files (one run at load average 29 timed out six slow tests in unrelated files; they passed
+alone, and the next full run passed). `pnpm build` passed. `issues-classify.spec.ts` and
+`issues-start.spec.ts`: 5 of 5. The whole e2e suite was not run: no viewer code changed.
