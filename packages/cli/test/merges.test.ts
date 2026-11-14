@@ -1298,6 +1298,50 @@ describe("Hive's entries (HV4, decisions 767–769)", () => {
   });
 });
 
+describe("a Hive entry's push, before it reads as landed (HV12)", () => {
+  it('is landed only with its push answered', async () => {
+    const { repo, shas } = setup();
+    const remote = origin(repo);
+    writeFileSync(join(remote, 'hooks', 'pre-receive'), '#!/bin/sh\nsleep 1\n', { mode: 0o755 });
+    review(repo, 'topic', { head: shas.T, into: 'main' });
+    const m = await make(repo);
+    await m.enqueue({ branch: 'topic', into: 'main', by: 'hive' });
+    let first: Awaited<ReturnType<typeof m.list>>['merges'][number] | undefined;
+    while (!first) {
+      const [entry] = (await m.list()).merges;
+      if (entry?.state === 'landed') first = entry;
+      else await new Promise((done) => setTimeout(done, 10));
+    }
+    expect(first.pushed).toEqual({ ok: true, remote: 'origin' });
+    await m.idle();
+  }, 20_000);
+
+  it('lands once: a second Land while it pushes is refused, one "Land in" step', async () => {
+    const { repo, shas } = setup();
+    const remote = origin(repo);
+    writeFileSync(join(remote, 'hooks', 'pre-receive'), '#!/bin/sh\nsleep 1\n', { mode: 0o755 });
+    review(repo, 'topic', { head: shas.T, into: 'main' });
+    const m = await make(repo);
+    const { id } = await m.enqueue({ branch: 'topic', into: 'main', by: 'hive' });
+    // Its push held by the hook: the entry is fast-forwarded and not yet landed.
+    while (repo.git('rev-parse', 'main') === shas.M) {
+      await new Promise((done) => setTimeout(done, 10));
+    }
+    const [during] = (await m.list()).merges;
+    expect(during?.state).not.toBe('landed');
+    await expect(m.land(id)).rejects.toThrow(/topic is landing/);
+    await m.idle();
+
+    const [entry] = (await m.list()).merges;
+    expect(entry).toMatchObject({ state: 'landed', pushed: { ok: true, remote: 'origin' } });
+    const lines = await logOf(m, id);
+    expect(shortLog(lines).filter((l) => l.startsWith('step land'))).toEqual([
+      'step land Land in main',
+    ]);
+    expect(repo.git('--git-dir', remote, 'rev-parse', 'main')).toBe(entry?.merge);
+  }, 20_000);
+});
+
 describe('into which branch (V26a)', () => {
   it('preselects the workspace’s against, else its from, else the verdict’s into, else the default branch', async () => {
     const { repo, shas } = setup();

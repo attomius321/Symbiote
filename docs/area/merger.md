@@ -93,9 +93,13 @@ An entry Hive queues has `by: 'hive'` (HV4). Every other entry is merged as abov
   into its branch.
 - **No check**: the entry lands without one.
 - **Landed**: the target is pushed whatever `merge.push` says, as a network run (ssh in batch
-  mode, 120 s), never forced. A refused push is in the entry's `pushed`.
+  mode, 120 s), never forced. The entry reads `landed` only once the push has answered: `landed`
+  and `pushed` are one write, and a refused push is in `pushed` with git's words. Until then it
+  stays `ready`.
 - **Hive follows the entry**: landed, it marks the workspace landed; `ready` because the person's
-  checkout refused, it presses Land again each minute; `failed` or `needs-you`, it copies what
+  checkout refused (the queue's "`<into>` was not moved" message, `refusedByCheckout`), it
+  presses Land again each minute; any other `ready` is the queue's own, about to land, and Hive
+  waits; `failed` or `needs-you`, it copies what
   failed and the log into its record, removes the entry (the target is free again), and tells the
   agent. The merge page marks the entry **by Hive** and offers no **Send to the agent** on it.
 - **Landing through a request instead** (HV8): with `hive.lands: "request"` Hive queues nothing.
@@ -232,6 +236,8 @@ when a later decision or a fix changed it.
 | 991–992 | An MCP approval queues its merge in the same Confirm; `queue_merge` approves an unapproved tip first | MC3 |
 | 1016 | A workspace from an issue lands by `hive.issues.lands`: a request by default, whatever `hive.lands` says (amends 788) | [HV10](../plan/hv10-workspace-from-issue.md) |
 | 1017, 1065 | A workspace from an issue: `Closes #n.` first in its request's description; `Closes #n` the body of every merge commit the queue makes of it; the subject unchanged; a fast-forward closes nothing | HV10 |
+| 1088 | A Hive entry is `landed` only with its push answered: `landed` and `pushed` in one write | [the push fix](../plan/fix-queue-landing-push.md), amends 768 |
+| 1089 | Hive lands again only a `ready` its checkout refused ("was not moved"); a second landing of an entry while one runs is refused | the push fix, narrows 770 |
 
 These no longer hold:
 
@@ -287,6 +293,12 @@ These no longer hold:
   changed since it last sent, so the page stayed on Queued (workspaces.spec.ts:2303). A page's
   own read now never replaces a part pushed after it began (`useWorkspaces.ts`,
   [the fix](../journal/fix-e2e-flakes.md)).
+- **An entry can be read between two writes.** The queue writes `ready`, then lands; it once
+  wrote `landed`, then pushed, then `pushed`. Hive reads on every write. It landed the queue's own
+  `ready` a second time (two pushes, the second rejected) and copied `pushed: false` from a
+  `landed` written before the push: 2 of 2 HV12 queue landings, all 4 here on 2026-11-02
+  ([the push fix](../journal/fix-queue-landing-push.md)). A state another part acts on is
+  written last, with everything it needs.
 - **A drain stopped by its lock or the queue's file waits for the next kick.** `kick()` catches
   what no entry holds; `symbiote view` logs it ("merger stopped", `onError`), and a read of the
   merges or any action kicks again.

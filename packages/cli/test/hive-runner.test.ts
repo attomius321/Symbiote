@@ -2340,6 +2340,40 @@ describe('Hive lands on its own (HV4, decisions 767–770)', () => {
   });
 });
 
+describe("the queue's own ready, a moment before it lands (HV12)", () => {
+  it('is not a refused checkout: Hive lands nothing itself', async () => {
+    const repo = repository(['true']);
+    const s = await setup(repo, { land: true });
+    const queue = s.merges!;
+    const enqueue = queue.enqueue.bind(queue);
+    queue.enqueue = (request) => enqueue(request, { start: false });
+    const list = queue.list.bind(queue);
+    queue.list = async () => {
+      const read = await list();
+      return {
+        ...read,
+        merges: read.merges.map((e) =>
+          e.state === 'queued' ? { ...e, state: 'ready' as const } : e,
+        ),
+      };
+    };
+    const land = vi.spyOn(queue, 'land');
+    await s.turn(true);
+    const worktree = await s.start('feature/once');
+    const runner = s.runner();
+    await s.fake.endTurn(worktree, { files: { 'once.txt': 'once\n' } });
+    await settle(
+      runner,
+      s,
+      async () => (await readHive(s.where, 'feature/once'))?.landings?.at(-1)?.entry !== undefined,
+      'queued',
+    );
+    await runner.tick();
+    await runner.idle();
+    expect(land).not.toHaveBeenCalled();
+  }, 60_000);
+});
+
 describe('No gate before landing (HV4, decision 773)', () => {
   it('a plan gets Hive in place of the person: its OK, and the loop goes on', async () => {
     const repo = repository(['true']);

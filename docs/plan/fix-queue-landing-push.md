@@ -2,7 +2,7 @@
 
 [Index](../PLAN.md) · Found by [HV12's real run](../journal/hv12-issue-loop-real-run.md)
 
-**Status:** planned (2026-11-14) by the spike `spike/hv12-issue-loop-real-run`. Not started.
+**Status:** built, ready for review (2026-11-14). Planned by the spike `spike/hv12-issue-loop-real-run`.
 
 **Kind** fix · **Branch** `fix/queue-landing-push` · **Size** M · **Depends on** none
 
@@ -118,3 +118,46 @@ Red: `expected "land" to not be called at all, but actually been called 1 times`
 The tests above; the merger's and Hive's landing tests unchanged; `pnpm check`, `pnpm build`, the
 merges and Hive e2e specs. Then a real queue landing to a GitHub remote records `pushed: true`,
 and its log has one "Land in" step.
+
+## Decisions
+
+1088 and 1089 were set aside for this fix by the brief (HV12's other fixes take other numbers).
+
+| # | Question | Decision | Why |
+|---|---|---|---|
+| 1088 | When does a Hive entry read `landed`? (amends 768's "pushed after landing") | **Only with its push answered: the target fast-forwarded, pushed, then `state: 'landed'`, `landed` and `pushed` in one write.** Until then it stays where it was (`ready`). A person's landing with `merge.push` keeps its order: `landed`, then `pushed` | Hive reads `landed` as done and copies `pushed` once. Written before the push, both of HV12's queue landings recorded `pushed: false` for pushes that went |
+| 1089 | Which `ready` does Hive land again? (narrows 770) | **Only one the target's checkout refused: the queue's "`<into>` was not moved…" message (`refusedByCheckout`). Any other `ready` waits, as `merging` does. And the merger refuses a second landing of an entry while one runs (409, "`<branch>` is landing")** | The queue writes `ready` a moment before it lands its own entry. Hive landed it then too: two fast-forwards and two pushes in 9 ms, the second's rejection the entry's `pushed` |
+
+## As built
+
+As planned, with three additions:
+
+- **A second landing of the same entry is refused** while one runs (`landEntry` keeps the IDs in
+  flight). The plan only stopped Hive from asking. Pushing before `landed` makes the window
+  between the fast-forward and `landed` as long as the push (up to 120 s), and the entry reads
+  `ready` meanwhile: a Land then would find the target moved and merge again. In one process only:
+  another process merges only behind the queue's lock.
+- **A re-landing's refusal words go before its push.** An entry Hive lands again after a refusal
+  still carries "was not moved" while it pushes. A push slower than Hive's retry (60 s) would read
+  as refused again. The message is cleared after the fast-forward, before the push.
+- **A third test**, in `merges.test.ts`: while a Hive entry pushes, `land` is refused, and its log
+  has one "Land in main" step.
+
+The refusal's words are built in one place (`notMoved` in `merge-land.ts`), and
+`refusedByCheckout` reads them, so the two cannot drift apart.
+
+## Results
+
+- **The tests**: the plan's two failed on `main`'s code as the plan says (`expected undefined to
+  deeply equal { ok: true, remote: 'origin' }`; `"land" … called 1 times`); so did the third
+  (`land` resolved instead of refusing). All three pass. `merges.test.ts`, `hive-runner.test.ts`
+  and `mark-merged.test.ts` otherwise unchanged: 199 of 199, HV4's "the person's checkout in the
+  way" among them.
+- **`pnpm check`** (3871 tests) and **`pnpm build`** pass, and so do the merges and Hive e2e specs: 41 of 41.
+- **A real queue landing to GitHub** (the private scratch repository of HV12, its `npm test` check
+  of 0.2 s, the built merger driven by a script, the entry queued `by: 'hive'`): the entry read
+  `queued`, `merging` (+1.8 s), `checking`, `ready` (+2.0 s), then `landed` (+5.8 s). The first
+  `landed` read had `pushed: { ok: true, remote: 'origin' }`. Its log has one "Land in main" step,
+  one fast-forward and one `Pushed to origin`; `git ls-remote` gave the merge, `b967062`. The
+  entry was `ready` for 3.8 s while it pushed: the window the refused second landing covers.
+  Hive's side of it (`follow`) was not in this run; the unit test covers it.
